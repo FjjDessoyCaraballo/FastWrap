@@ -1,13 +1,22 @@
 from fastapi import FastAPI, status
-import logging
 from config import settings
 from app.api.routes import router
+import sys
+import logging
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename='logfile.log', level=logging.INFO)
+# Logging (terminal and logfile)
+file_handler = logging.FileHandler('logfile.log')
+console_handler = logging.StreamHandler(sys.stderr)
 
-logger.info(f"VanaciPrime key: {settings.vanaciprime_api_key}")
+formatter= logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
 
 # NEED TO COME BACK TO ADD PARAMETERS TO FASTAPI OBJECT
 app = FastAPI(
@@ -28,6 +37,7 @@ if __name__ == "__main__":
         "main:app",
         host=settings.host, 
         port=settings.port,
+        reload=True
         )
 
 

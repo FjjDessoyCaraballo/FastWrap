@@ -1,10 +1,12 @@
 from fastapi import status, APIRouter, HTTPException
 from ..models.schemas import RoleRequest, Completions
 import logging
+import sys
 # NEED TO ADD TOKENIZED SECURITY LATER
  
 router = APIRouter()
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
+#logging.StreamHandler(sys.stderr)
   
 @router.get("/") 
 async def root(status_code=status.HTTP_200_OK): 
@@ -14,8 +16,8 @@ async def root(status_code=status.HTTP_200_OK):
              "Author": "Felipe",
              "Status": "Development"})
  
-@router.post("/api/role")
-async def role(request: RoleRequest):
+@router.post("/api/character")
+async def character(request: RoleRequest):
     try:
         logger.info(f"Received role request: {request.agent_role}, TTL: {request.TTL}")
     except Exception as e:
