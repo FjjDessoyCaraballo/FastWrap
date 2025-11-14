@@ -15,16 +15,13 @@ async def root(status_code=status.HTTP_200_OK):
              "Author": "Felipe",
              "Status": "Development"})
  
-@router.post("/api/character")
-async def character(request: RoleRequest):
+@router.post("/api/characters", status_code=status.HTTP_201_CREATED)
+async def characters(request: RoleRequest):
     try:
+        # Separate this endpoint to the clients directory for separation of concerns
+        # Endpoint must only create the resource and just that
         logger.info(f"Received role request: {request.agent_role}, TTL: {request.TTL}")
-        return { 
-                "status": "Success",
-                "message": "Character role set successfully",
-                "agent_role": request.agent_role,
-                "ttl": request.TTL
-                }
+        return {"message": "Character created", "data": request.dict()}
     except Exception as e:
         logger.error(f"Error in processing role request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
