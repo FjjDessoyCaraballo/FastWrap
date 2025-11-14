@@ -6,7 +6,6 @@ import sys
  
 router = APIRouter()
 logger = logging.getLogger(__name__)
-#logging.StreamHandler(sys.stderr)
   
 @router.get("/") 
 async def root(status_code=status.HTTP_200_OK): 
@@ -20,6 +19,12 @@ async def root(status_code=status.HTTP_200_OK):
 async def character(request: RoleRequest):
     try:
         logger.info(f"Received role request: {request.agent_role}, TTL: {request.TTL}")
+        return { 
+                "status": "Success",
+                "message": "Character role set successfully",
+                "agent_role": request.agent_role,
+                "ttl": request.TTL
+                }
     except Exception as e:
         logger.error(f"Error in processing role request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
