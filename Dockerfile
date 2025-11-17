@@ -15,4 +15,4 @@ COPY . .
    
 EXPOSE 8555
    
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8555"]
+CMD ["uv", "run", "main.py"]
