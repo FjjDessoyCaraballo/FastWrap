@@ -22,5 +22,5 @@ inventory = {
 @tool
 def check_products(product: str) -> str:
     if product in inventory:
-        return f"We have {product} for ${inventory[product]}
+        return f"We have {product} for ${inventory[product]}"
     return f"Sorry, we won't have {product} in stock"

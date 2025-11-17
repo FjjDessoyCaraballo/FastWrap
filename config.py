@@ -1,9 +1,11 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    vanaciprime_api_key: str
-    port: int
-    host: str
+    VANACIPRIME_API_KEY: str
+    PORT: int
+    HOST: str
+    MODEL: str
+    MODEL_KEY: str
     class Config:
         env_file = ".env"
 
