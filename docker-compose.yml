@@ -1,0 +1,28 @@
+services:
+  api:
+    build: .
+    ports:
+      - "${PORT:-8555}:8555"
+    environment:
+      - VANACIPRIME_API_KEY=${VANACIPRIME_API_KEY}
+      - PORT=${PORT}
+      - HOST=${HOST}
+      - MODEL=${MODEL}
+      - MODEL_KEY=${MODEL_KEY}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6370:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:
