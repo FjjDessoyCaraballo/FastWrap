@@ -8,5 +8,6 @@ dependencies = [
     "fastapi>=0.121.1",
     "langchain>=1.0.7",
     "pydantic-settings>=2.12.0",
+    "redis>=7.0.1",
     "uvicorn>=0.38.0",
 ]
