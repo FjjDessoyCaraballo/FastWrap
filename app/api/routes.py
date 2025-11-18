@@ -1,5 +1,6 @@
 from fastapi import status, APIRouter, HTTPException
 from ..models.schemas import RoleRequest, Completions
+from ..clients.chat_cache_service import store_message
 import logging
 import sys
 # NEED TO ADD TOKENIZED SECURITY LATER
@@ -20,7 +21,7 @@ async def characters(request: RoleRequest):
     try:
         # Separate this endpoint to the clients directory for separation of concerns
         # Endpoint must only create the resource and just that
-        logger.info(f"Received role request: {request.agent_role}, TTL: {request.TTL}")
+        logger.info(f"Received role request: {request.agent_role}, TTL: {request.TTL}") 
         return {"message": "Character created", "data": request.dict()}
     except Exception as e:
         logger.error(f"Error in processing role request: {e}")
@@ -28,7 +29,8 @@ async def characters(request: RoleRequest):
  
 @router.post("/api/chat")
 async def chat(request: Completions):
-    return ({f"Role: {request.role} | Content: {request.content} "})
+    call_status: int = await store_message(request)
+    return ({f"Role: {request.role} | Content: {request.content} | Status: {call_status} "})
 
 @router.get("/health")
 async def health(status_code=status.HTTP_200_OK):
