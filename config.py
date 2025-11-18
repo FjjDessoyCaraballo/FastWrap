@@ -3,6 +3,9 @@ from typing import Optional
 
 class Settings(BaseSettings):
     VANACIPRIME_API_KEY: str
+    REDIS_API_KEY: str
+    REDIS_HOST: str
+    REDIS_PORT: int
     PORT: int
     HOST: str
     MODEL: str
