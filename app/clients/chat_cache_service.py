@@ -1,4 +1,4 @@
-from ..models.schemas import Completions, RoleRequest
+from ..models.schemas import Completions
 from ..clients.redis_client import redis_client as r
 from fastapi import HTTPException
 
@@ -13,27 +13,3 @@ async def store_message(request: Completions):
         return 201
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-async def store_character(request: RoleRequest):
-    return
-
-
-
-
-
-
-
-
-
-# OLD CODE FROM STORE_CHARACTER (TO BE DELETED)
-    # try:
-    #     await r.hset(f"character:{request.uuid}", mapping={
-    #         "uuid": request.uuid,
-    #         "agent_role": request.agent_role,
-    #     })
-    #     if request.TTL:
-    #         r.expire(f"character:{request.uuid}", request.TTL)
-    #     return 201
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=str(e))
-    # returnk

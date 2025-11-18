@@ -9,8 +9,10 @@ services:
       - HOST=${HOST}
       - MODEL=${MODEL}
       - MODEL_KEY=${MODEL_KEY}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
+      # - REDIS_HOST=${REDIS_HOST}
+      # - REDIS_PORT=${REDIS_PORT}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       - redis
     volumes:
