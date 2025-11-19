@@ -32,15 +32,15 @@ async def db_insertion(request: RoleRequest):
     logger.info(f"Inserting new character for ID {request.agent_role}")
     try:
         async with aiosqlite.connect(DB_PATH) as conn:
-            if request.TTL:
-                conn.execute(f"""INSERT INTO characters ( uui, agent_role, TTL ) 
-                VALUES ( ?, ?, ? )
-                """, request.uuid, request.agent_role)
-            else:
-                conn.execute(f"""INSERT INTO characters ( uuid, agent_role ) 
+            if request.TTL is None:
+                await conn.execute(f"""INSERT INTO characters ( uuid, agent_role ) 
                 VALUES (?, ?)
-                """, request.uuid, request.agent_role)
-            conn.commit()
+                """, (request.uuid, request.agent_role))
+            else:
+                await conn.execute(f"""INSERT INTO characters ( uuid, agent_role, TTL ) 
+                VALUES ( ?, ?, ? )
+                """, (request.uuid, request.agent_role, request.TTL))
+            await conn.commit()
     except aiosqlite.DatabaseError as e:
         logger.error(f"Database error: {e}")
         raise aiosqlite.DatabaseError

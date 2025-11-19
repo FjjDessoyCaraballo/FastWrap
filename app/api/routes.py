@@ -23,10 +23,10 @@ async def characters(request: RoleRequest):
     logger.info(f"Received role request: {request.agent_role}, TTL: {request.TTL}") 
     return {"message": "Character created", "data": request.dict()}
  
-@router.post("/api/chat")
+@router.post("/api/chat", status_code=status.HTTP_201_CREATED)
 async def chat(request: Completions):
     call_status: int = await store_message(request)
-    return ({f"Role: {request.role} | Content: {request.content} | Status: {call_status} "})
+    return {"Role": f"{request.role}", "Content": f"{request.content}", "Status": f"{call_status}"}
 
 @router.get("/health")
 async def health(status_code=status.HTTP_200_OK):
