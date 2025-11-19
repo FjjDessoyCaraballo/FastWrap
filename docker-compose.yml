@@ -9,10 +9,10 @@ services:
       - HOST=${HOST}
       - MODEL=${MODEL}
       - MODEL_KEY=${MODEL_KEY}
-      # - REDIS_HOST=${REDIS_HOST}
-      # - REDIS_PORT=${REDIS_PORT}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_HOST=${REDIS_HOST} # FOR DEVELOPMENT
+      # - REDIS_HOST=redis # FOR PROD RELEASE
+      - REDIS_PORT=${REDIS_PORT}
+      # - REDIS_PORT=6379
     depends_on:
       - redis
     volumes:
@@ -21,7 +21,12 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6370:6379"
+      - "6379:6379"
+    environment:
+      - REDIS_HOST=${REDIS_HOST} # FOR DEVELOPMENT
+      # - REDIS_HOST=redis # FOR PROD RELEASE
+      - REDIS_PORT=${REDIS_PORT}
+      # - REDIS_PORT=6379
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
