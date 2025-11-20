@@ -3,7 +3,7 @@ from config import settings
 from contextlib import asynccontextmanager
 from app.api.routes import router
 from app.clients.redis_client import redis_client
-from app.clients.db_character import db_creation
+from app.clients.database_creation import db_creation
 import sys
 import logging
 
