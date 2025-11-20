@@ -1,7 +1,7 @@
 from fastapi import status, APIRouter, HTTPException
 from ..models.schemas import RoleRequest, Completions
-from ..clients.chat_cache_service import store_message
-from ..clients.character_service import store_character
+from ..clients.chat_service import store_message
+from ..clients.character_service import store_character, update_character, delete_character
 import logging
 import sys
 # NEED TO ADD TOKENIZED SECURITY LATER
@@ -20,9 +20,21 @@ async def root(status_code=status.HTTP_200_OK):
 @router.post("/api/characters", status_code=status.HTTP_201_CREATED)
 async def characters(request: RoleRequest):
     await store_character(request)
-    logger.info(f"Received role request: {request.agent_role}, TTL: {request.TTL}") 
+    logger.info(f"Received role creation request. Data: {request.dict()}")
     return {"message": "Character created", "data": request.dict()}
+
+@router.delete("/api/characters", status_code=status.HTTP_204_NO_CONTENT)
+async def characters(request: RoleRequest):
+    await delete_character(request)
+    logger.info(f"Received role deletion request")
+    return {"message": "Character deleted"}
  
+@router.patch("/api/characters", status_code=status.HTTP_200_OK)
+async def characters(request: RoleRequest):
+    await update_character(request)
+    logger.info(f"Received role update request: {request.dict()}")
+    return {"message": "Character updated", "data": request.dict()}
+
 @router.post("/api/chat", status_code=status.HTTP_201_CREATED)
 async def chat(request: Completions):
     call_status: int = await store_message(request)
