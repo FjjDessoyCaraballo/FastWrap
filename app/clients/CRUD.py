@@ -2,13 +2,14 @@ import aiosqlite
 import logging
 from pathlib import Path
 from ..models.schemas import RoleRequest
+from fastapi import status
 
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DB_PATH = PROJECT_ROOT / "characters.db"
 
-async def db_insertion(request: RoleRequest):
+async def db_insertion(request: RoleRequest) -> int:
     logger.info(f"Inserting new character for ID {request.uuid}")
     logger.info(f"Role: {request.agent_role}")
     try:
@@ -23,11 +24,12 @@ async def db_insertion(request: RoleRequest):
                 """, (request.uuid, request.agent_role, request.TTL))
             await conn.commit()
             logger.info(f"Successfully created ID {request.uuid} with new role {request.agent_role}")
+            return status.HTTP_201_CREATED
     except aiosqlite.DatabaseError as e:
         logger.error(f"Database error: {e}")
         raise
 
-async def db_update(request: RoleRequest):
+async def db_update(request: RoleRequest) -> int:
     logger.info(f"Updating role for ID: {request.uuid}")
     logger.info(f"New role: {request.agent_role}")
     try:
@@ -40,19 +42,26 @@ async def db_update(request: RoleRequest):
                 (request.agent_role, request.TTL, request.uuid))
             await conn.commit()
             logger.info(f"Successfully update ID {request.uuid} with new role {request.agent_role}")
+            return status.HTTP_200_OK
     except aiosqlite.DatabaseError as e:
         logger.error(f"Database error: {e}")
         raise
 
-async def db_delete(request: RoleRequest):
+async def db_delete(request: RoleRequest) -> int:
     logger.info(f"Deleting role for ID: {request.uuid}")
-    logger.info(f"New role: {request.agent_role}")
+    logger.info(f"role: {request.agent_role}")
     try:
         async with aiosqlite.connect(DB_PATH) as conn:
-            await conn.execute("DELETE FROM characters WHERE uuid = ?", 
-            (request.uuid))
+            cursor = await conn.execute("DELETE FROM characters WHERE uuid = ?", 
+            (request.uuid,))
+            if cursor.rowcount == 0:
+                logger.warning("Resource not deleted because it does not exist.")
+                http_status = status.HTTP_404_NOT_FOUND
+            else:
+                logger.info(f"Successfully deleted ID {request.uuid}")
+                http_status = status.HTTP_204_NO_CONTENT
             await conn.commit()
-            logger.info(f"Successfully deleted ID {request.uuid}")
+            return http_status
     except aiosqlite.DatabaseError as e:
         logger.error(f"Database error: {e}")
         raise

@@ -1,4 +1,4 @@
-from fastapi import status, APIRouter, HTTPException
+from fastapi import status, APIRouter, HTTPException, Response
 from ..models.schemas import RoleRequest, Completions
 from ..clients.chat_service import store_message
 from ..clients.character_service import store_character, update_character, delete_character
@@ -17,25 +17,33 @@ async def root(status_code=status.HTTP_200_OK):
              "Author": "Felipe",
              "Status": "Development"})
  
-@router.post("/api/characters", status_code=status.HTTP_201_CREATED)
-async def characters(request: RoleRequest):
-    await store_character(request)
+@router.post("/api/characters")
+async def characters(request: RoleRequest, response: Response):
+    http_status = await store_character(request)
+    response.status_code = http_status
     logger.info(f"Received role creation request. Data: {request.dict()}")
+
     return {"message": "Character created", "data": request.dict()}
 
-@router.delete("/api/characters", status_code=status.HTTP_204_NO_CONTENT)
-async def characters(request: RoleRequest):
-    await delete_character(request)
+@router.delete("/api/characters")
+async def characters(request: RoleRequest, response: Response):
+    http_status = await delete_character(request)
+    response.status_code = http_status
     logger.info(f"Received role deletion request")
+
+    if http_status == status.HTTP_404_NOT_FOUND:
+        return {"message": "Character not found"}
     return {"message": "Character deleted"}
  
-@router.patch("/api/characters", status_code=status.HTTP_200_OK)
+@router.patch("/api/characters")
 async def characters(request: RoleRequest):
-    await update_character(request)
+    http_status = await update_character(request)
+    response.status_code = http_status
     logger.info(f"Received role update request: {request.dict()}")
+
     return {"message": "Character updated", "data": request.dict()}
 
-@router.post("/api/chat", status_code=status.HTTP_201_CREATED)
+@router.post("/api/chat")
 async def chat(request: Completions):
     call_status: int = await store_message(request)
     return {"Role": f"{request.role}", "Content": f"{request.content}", "Status": f"{call_status}"}
