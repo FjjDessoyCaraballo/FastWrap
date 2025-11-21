@@ -66,19 +66,20 @@ async def db_delete(request: RoleRequest) -> int:
         logger.error(f"Database error: {e}")
         raise
 
-# async def db_select(request: RoleRequest):
-#     logger.info(f"Updating role for ID: {request.uuid}")
-#     logger.info(f"New role: {request.agent_role}")
-#     try:
-#         async with aiosqlite.connect(DB_PATH) as conn:
-#             if request.TTL is None:
-#                 await conn.execute("UPDATE OR ABORT characters SET agent_role = ? WHERE uuid == ?", 
-#                 (request.agent_role, request.uuid))
-#             else:
-#                 await conn.execute("UPDATE OR ABORT characters SET agent_role = ?, TTL = ? WHERE uuid == ?", 
-#                 (request.agent_role, request.TTL, request.uuid))
-#             await conn.commit()
-#             logger.info(f"Successfully update ID {request.uuid} with new role {request.agent_role}")
-#     except aiosqlite.DatabaseError as e:
-#         logger.error(f"Database error: {e}")
-#         raise
+async def db_select(request: RoleRequest):
+    logger.info(f"Fetching information for role ID: {request.uuid}")
+    logger.info(f"Role: {request.agent_role}")
+    try:
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute("SELECT agent_role FROM characters WHERE uuid = ?", (request.uuid,))
+            row = await cursor.fetchone()
+            if row is None:
+                logger.warning("uuid does not correspond to any existing IDs in database")
+                return status.HTTP_404_NOT_FOUND
+            logger.info(f"retrieving information from {request.uuid}: {row}")
+            return status.HTTP_200_OK
+            await conn.commit()
+            logger.info(f"Successfully fetched ID {request.uuid} with role {request.agent_role}")
+    except aiosqlite.DatabaseError as e:
+        logger.error(f"Database error: {e}")
+        raise
