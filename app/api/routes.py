@@ -1,7 +1,7 @@
 from fastapi import status, APIRouter, HTTPException, Response
 from ..models.schemas import RoleRequest, Completions
 from ..clients.chat_service import store_message
-from ..clients.character_service import store_character, update_character, delete_character
+from ..clients.character_service import store_character, update_character, delete_character, get_character
 import logging
 import sys
 # NEED TO ADD TOKENIZED SECURITY LATER
@@ -36,12 +36,20 @@ async def characters(request: RoleRequest, response: Response):
     return {"message": "Character deleted"}
  
 @router.patch("/api/characters")
-async def characters(request: RoleRequest):
+async def characters(request: RoleRequest, response: Response):
     http_status = await update_character(request)
     response.status_code = http_status
     logger.info(f"Received role update request: {request.dict()}")
-
     return {"message": "Character updated", "data": request.dict()}
+
+@router.get("/api/characters")
+async def characters(request: RoleRequest, response: Response):
+    http_status = await get_character(request)
+    response.status_code = http_status
+    if http_status == status.HTTP_404_NOT_FOUND:
+        return {"message": "resource does not exist"}
+    logger.info(f"Received role fetch request: {request.dict()}")
+    return {"message": "Character fetched", "data": request.dict()}
 
 @router.post("/api/chat")
 async def chat(request: Completions):
