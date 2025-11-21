@@ -7,6 +7,10 @@ class RoleRequest(BaseModel):
     agent_role: str = Field(..., min_length=1, description="The role of the agent.")
     TTL: Optional[int] = Field(None, gt=0, description="Time to live in seconds. Optional parameter")
 
+class PatchRole(BaseModel):
+    agent_role: str = Field(..., min_length=1, description="The role of the agent.")
+    TTL: Optional[int] = Field(None, gt=0, description="Time to live in seconds. Optional parameter")
+
 class Completions(BaseModel):
     uuid: str = Field(..., min_length=36, description="Unique user ID.")
     role: str = Field(..., min_length=1, description="Role to differentiate between chatbot and user.")
