@@ -1,7 +1,7 @@
 import aiosqlite
 import logging
 from pathlib import Path
-from ..models.schemas import RoleRequest
+from ..models.schemas import RoleRequest, ServiceRoleRequest
 from fastapi import status
 
 logger = logging.getLogger(__name__)
@@ -66,9 +66,8 @@ async def db_delete(request: RoleRequest) -> int:
         logger.error(f"Database error: {e}")
         raise
 
-async def db_select(request: RoleRequest):
+async def db_select(request: ServiceRoleRequest) -> tuple[str, int]:
     logger.info(f"Fetching information for role ID: {request.uuid}")
-    logger.info(f"Role: {request.agent_role}")
     try:
         async with aiosqlite.connect(DB_PATH) as conn:
             cursor = await conn.execute("SELECT agent_role FROM characters WHERE uuid = ?", (request.uuid,))
@@ -76,10 +75,11 @@ async def db_select(request: RoleRequest):
             if row is None:
                 logger.warning("uuid does not correspond to any existing IDs in database")
                 return status.HTTP_404_NOT_FOUND
-            logger.info(f"retrieving information from {request.uuid}: {row}")
-            return status.HTTP_200_OK
+            agent_role = row[0]
+            logger.info(f"retrieving information from {request.uuid}")
+            return agent_role, status.HTTP_200_OK
             await conn.commit()
-            logger.info(f"Successfully fetched ID {request.uuid} with role {request.agent_role}")
+            logger.info(f"Successfully fetched ID {request.uuid}")
     except aiosqlite.DatabaseError as e:
         logger.error(f"Database error: {e}")
         raise
