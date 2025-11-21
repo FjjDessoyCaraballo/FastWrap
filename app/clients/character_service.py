@@ -1,6 +1,6 @@
 from ..models.schemas import RoleRequest
 from fastapi import HTTPException
-from .CRUD import db_insertion, db_update, db_delete
+from .CRUD import db_insertion, db_update, db_delete, db_select
 
 async def store_character(request: RoleRequest):
     try:
@@ -19,6 +19,13 @@ async def update_character(request: RoleRequest):
 async def delete_character(request: RoleRequest):
     try:
         http_status = await db_delete(request)
+        return http_status
+    except:
+        raise
+
+async def get_character(request: RoleRequest):
+    try:
+        http_status = await db_select(request)
         return http_status
     except:
         raise
