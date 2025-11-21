@@ -19,7 +19,7 @@ async def root(status_code=status.HTTP_200_OK):
  
 @router.post("/api/characters")
 async def characters(request: RoleRequest, response: Response):
-    http_status = await store_character(request)
+    http_status: int = await store_character(request)
     response.status_code = http_status
     logger.info(f"Received role creation request. Data: {request.dict()}")
 
@@ -27,7 +27,7 @@ async def characters(request: RoleRequest, response: Response):
 
 @router.delete("/api/characters")
 async def characters(request: RoleRequest, response: Response):
-    http_status = await delete_character(request)
+    http_status: int = await delete_character(request)
     response.status_code = http_status
     logger.info(f"Received role deletion request")
 
@@ -37,14 +37,14 @@ async def characters(request: RoleRequest, response: Response):
  
 @router.patch("/api/characters")
 async def characters(request: RoleRequest, response: Response):
-    http_status = await update_character(request)
+    http_status: int = await update_character(request)
     response.status_code = http_status
     logger.info(f"Received role update request: {request.dict()}")
     return {"message": "Character updated", "data": request.dict()}
 
 @router.get("/api/characters")
 async def characters(request: RoleRequest, response: Response):
-    http_status = await get_character(request)
+    http_status: int = await get_character(request)
     response.status_code = http_status
     if http_status == status.HTTP_404_NOT_FOUND:
         return {"message": "resource does not exist"}
