@@ -8,7 +8,7 @@ import sys
 import logging
 
 # Logging (terminal and logfile)
-file_handler = logging.FileHandler('logfile.log')
+file_handler = logging.FileHandler('logs/logfile.log')
 console_handler = logging.StreamHandler(sys.stderr)
 formatter= logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
