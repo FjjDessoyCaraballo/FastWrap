@@ -75,7 +75,7 @@ async def characters(
 
 @router.get("/api/characters")
 async def characters(response: Response):
-    
+
     http_status: int
     agent_roles: dict
 

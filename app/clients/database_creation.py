@@ -5,7 +5,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-DB_PATH = PROJECT_ROOT / "characters.db"
+DB_PATH = PROJECT_ROOT / "database/characters.db"
 
 table_format = """
 CREATE TABLE IF NOT EXISTS characters (
