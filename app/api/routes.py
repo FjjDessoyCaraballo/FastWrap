@@ -91,10 +91,18 @@ async def characters(response: Response):
 
 @router.post("/api/chat")
 async def chat(request: Completions):
+    """
+    This endpoint utilizes OpenAI API Completions pattern establishing user and content.
+    The chat will be valid for a small amount of time, and after that it will be erased from memory.
+    The endpoint itself needs an UUID to identify the user. If the chat is available still, the UUID
+    will be used to identify the chat.
+
+    :Parameters:
+        `request: Completions` - Object that contains UUID, user, and content.
+    """
+    http_status: int = await store_message(request)
     
-    call_status: int = await store_message(request)
-    
-    return {"Role": f"{request.role}", "Content": f"{request.content}", "Status": f"{call_status}"}
+    return {"message": "Chat request posted", "data": request}
 
 @router.get("/health")
 async def health(status_code=status.HTTP_200_OK):
