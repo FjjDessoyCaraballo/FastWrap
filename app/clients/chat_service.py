@@ -14,7 +14,7 @@ async def store_message(request: Completions):
         logging.info(f"Parsed request: {parsed}")
         await r.expire(f"chat:{request.uuid}", 300)
         return status.HTTP_201_CREATED
-    except HTTPException as e: # (status_code=500, detail=str(e))
+    except HTTPException as e:
         logger.error(f"Network error caught: {e}")
         raise
     except Exception as e:
