@@ -2,6 +2,7 @@ from fastapi import status, Path, APIRouter, HTTPException, Response
 from ..models.schemas import RoleRequest, ServiceRoleRequest, Completions, PatchRole
 from ..clients.chat_service import store_message
 from ..clients.character_service import store_character, update_character, delete_character, get_character, get_all_character
+from typing import Any
 import logging
 import sys
  
@@ -100,9 +101,11 @@ async def chat(request: Completions):
     :Parameters:
         `request: Completions` - Object that contains UUID, user, and content.
     """
-    http_status: int = await store_message(request)
+    http_status: int 
+    response: dict[str, Any]
+    http_status, response = await store_message(request)
     
-    return {"message": "Chat request posted", "data": request}
+    return {"message": "Chat request posted", "data": response}
 
 @router.get("/health")
 async def health(status_code=status.HTTP_200_OK):
