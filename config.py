@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     MODEL: str
     MODEL_KEY: str
     MODEL_PROVIDER: str | None = None
+    LANGCHAIN_API_KEY: str | None = None
+    LANGSMITH_TRACING_V2: bool = True
     class Config:
         env_file = ".env"
 
