@@ -1,27 +1,38 @@
 import logging
+from ..clients.CRUD import crud_management
 # from .tools import check_products
 from config import settings
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 from langchain.chat_models import init_chat_model
 from typing import Any
-
+from langsmith import Client
+ 
+client = Client()
 logger = logging.getLogger(__name__)
-
 instructions = "you are a helpful assistant"
 
 class ChatBot():
     def __init__(self):
-        model = self._detect_provider()
+        model = self._detect_provider() # probably will change to let store choose
         self.agent = create_agent(
                 model=model,
                 system_prompt=f"{instructions}",
                 # tools=[check_products]
                 )
 
-    def chat(self, parsed_messages: list[dict[str, str]]) -> dict[str, Any]:
+    async def chat(self, parsed_messages: list[dict[str, str]]) -> dict[str, Any]:
         response = self.agent.invoke({"messages": parsed_messages})
         return response
+
+    async def rag(self, messages: list[dict[str, str]], uuid: str) -> list[dict[str, str]]:
+        try:
+            crud = crud_management()
+            rag, status_code = await crud.db_select(uuid)
+            return rag, status_code
+        except Exception as e:
+            logger.error(f"Caught unexpected error: {e}")
+            raise
 
     def _detect_provider(self) -> BaseChatModel:
         try:

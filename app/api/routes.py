@@ -1,8 +1,9 @@
-from fastapi import status, Path, APIRouter, HTTPException, Response
+from fastapi import status, Path, APIRouter, HTTPException, Response, Header
 from ..models.schemas import RoleRequest, ServiceRoleRequest, Completions, PatchRole
 from ..clients.chat_service import store_message
 from ..clients.character_service import store_character, update_character, delete_character, get_character, get_all_character
 from typing import Any
+from uuid import UUID
 import logging
 import sys
  
@@ -91,7 +92,11 @@ async def characters(response: Response):
     return {"message": "Characters fetched", "data": agent_roles}
 
 @router.post("/api/chat")
-async def chat(request: Completions):
+async def chat(
+    response: Response, 
+    request: Completions,
+    x_store_id: str = Header(..., min_length=36, max_length=36)
+    ):
     """
     This endpoint utilizes OpenAI API Completions pattern establishing user and content.
     The chat will be valid for a small amount of time, and after that it will be erased from memory.
@@ -101,11 +106,15 @@ async def chat(request: Completions):
     :Parameters:
         `request: Completions` - Object that contains UUID, user, and content.
     """
-    http_status: int 
-    response: dict[str, Any]
-    http_status, response = await store_message(request)
     
-    return {"message": "Chat request posted", "data": response}
+    http_status: int 
+    prompt: dict[str, Any]
+    character_uuid: str = x_store_id
+    logger.debug(f"header: {x_store_id}")
+    http_status, prompt = await store_message(request, character_uuid)
+    response.status_code = http_status
+
+    return {"message": "Chat request posted", "data": prompt}
 
 @router.get("/health")
 async def health(status_code=status.HTTP_200_OK):
