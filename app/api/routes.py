@@ -1,7 +1,8 @@
-from fastapi import status, Path, APIRouter, HTTPException, Response, Header
-from ..models.schemas import RoleRequest, ServiceRoleRequest, Completions, PatchRole
+from fastapi import status, Path, APIRouter, Response, Header
+from ..models import schemas
 from ..clients.chat_service import store_message
-from ..clients.character_service import store_character, update_character, delete_character, get_character, get_all_character
+from ..auth import client_service as auth
+from ..clients import character_service
 from typing import Any
 from uuid import UUID
 import logging
@@ -21,21 +22,24 @@ async def root(status_code=status.HTTP_200_OK):
              "Status": "Development"})
  
 @router.post("/api/characters")
-async def characters(request: RoleRequest, response: Response):
+async def characters(request: schemas.RoleRequest, response: Response):
     
-    http_status: int = await store_character(request)
+    http_status: int = await character_service.store_character(request)
     response.status_code = http_status
     logger.info(f"Received role creation request. Data: {request.dict()}")
 
-    return {"message": "Character created", "data": request.dict()}
+    return {
+        "message": "Character created",
+        "data": request.dict()
+        }
 
 @router.delete("/api/characters/{uuid}")
 async def characters(
-    request: RoleRequest,
+    request: schemas.RoleRequest,
     response: Response,
     uuid: str = Path(min_length=36, description="Character UUID")
     ):
-    http_status: int = await delete_character(uuid)
+    http_status: int = await character_service.delete_character(uuid)
     response.status_code = http_status
     logger.info(f"Received role deletion request")
 
@@ -45,16 +49,19 @@ async def characters(
  
 @router.patch("/api/characters/{uuid}")
 async def characters(
-    request: PatchRole,
+    request: schemas.PatchRole,
     response: Response,
     uuid: str = Path(min_length=36, description="Character UUID")
     ):
     
-    http_status: int = await update_character(uuid, request)
+    http_status: int = await character_service.update_character(uuid, request)
     response.status_code = http_status
     logger.info(f"Received role update request: {request.dict()}")
     
-    return {"message": "Resource updated", "data": request.dict()}
+    return {
+        "message": "Resource updated",
+        "data": request.dict()
+        }
 
 @router.get("/api/characters/{uuid}")
 async def characters(
@@ -65,7 +72,7 @@ async def characters(
     http_status: int
     agent_role: str
 
-    agent_role, http_status = await get_character(uuid)
+    agent_role, http_status = await character_service.get_character(uuid)
     response.status_code = http_status
     
     if http_status == status.HTTP_404_NOT_FOUND:
@@ -73,7 +80,10 @@ async def characters(
     
     logger.info(f"Received role fetch request: {agent_role}")
     
-    return {"message": "Character fetched", "data": agent_role}
+    return {
+        "message": "Character fetched",
+        "data": agent_role
+        }
 
 @router.get("/api/characters")
 async def characters(response: Response):
@@ -81,7 +91,7 @@ async def characters(response: Response):
     http_status: int
     agent_roles: dict
 
-    agent_roles, http_status = await get_all_character()
+    agent_roles, http_status = await character_service.get_all_character()
     response.status_code = http_status
     
     if http_status == status.HTTP_404_NOT_FOUND:
@@ -89,12 +99,15 @@ async def characters(response: Response):
     
     logger.info(f"Received role fetch request: {agent_roles}")
     
-    return {"message": "Characters fetched", "data": agent_roles}
+    return {
+        "message": "Characters fetched",
+        "data": agent_roles
+        }
 
 @router.post("/api/chat")
 async def chat(
     response: Response, 
-    request: Completions,
+    request: schemas.Completions,
     x_store_id: str = Header(..., min_length=36, max_length=36)
     ):
     """
@@ -114,8 +127,29 @@ async def chat(
     http_status, prompt = await store_message(request, character_uuid)
     response.status_code = http_status
 
-    return {"message": "Chat request posted", "data": prompt}
+    return {
+        "message": "Chat request posted",
+        "data": prompt
+        }
 
 @router.get("/health")
 async def health(status_code=status.HTTP_200_OK):
     return {"Health": "OK"}
+
+@router.post("/auth/signup")
+async def signup(
+    response: Response,
+    request: schemas.SignupRequest
+):
+    http_status = await auth.register_client
+    return {
+        "message": "Signup request received", 
+        "status": http_status
+        }
+
+@router.post("/auth/login")
+async def login(
+    response: Response,
+    request: schemas.LoginRequest
+):
+    return {}

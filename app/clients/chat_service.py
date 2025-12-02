@@ -31,7 +31,7 @@ async def store_message(request: Completions, character_uuid: str):
 
         response: dict[str, Any]
         response = await chatbot.chat(parsed)
-
+    
         await r.expire(f"chat:{character_uuid}:{request.uuid}", 300)
         return status.HTTP_201_CREATED, response
 

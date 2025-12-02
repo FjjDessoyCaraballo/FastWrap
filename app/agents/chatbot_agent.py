@@ -28,7 +28,7 @@ class ChatBot():
     async def rag(self, messages: list[dict[str, str]], uuid: str) -> list[dict[str, str]]:
         try:
             crud = crud_management()
-            rag, status_code = await crud.db_select(uuid)
+            rag, status_code = await crud.db_select_character(uuid)
             return rag, status_code
         except Exception as e:
             logger.error(f"Caught unexpected error: {e}")

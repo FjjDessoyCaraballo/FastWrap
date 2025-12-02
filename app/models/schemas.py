@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import Optional
 from dataclasses import dataclass
+import string
 
 class RoleRequest(BaseModel):
     uuid: str = Field(..., min_length=36, description="Unique user ID.")
@@ -18,3 +19,30 @@ class Completions(BaseModel):
 
 class ServiceRoleRequest(BaseModel):
     uuid: str = Field(..., min_length=36, description="Unique user ID that serves as a general identifier for users and clients")
+
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+    @field_validator('password')
+    def password_policy(cls, v):
+        if len(v) < 10:
+            raise ValueError('Password must be at least 10 characters')
+
+        if not any(char.islower() for char in v):
+            raise ValueError('Must have at least one lowercase character')
+
+        if not any(char.isupper() for char in v):
+            raise ValueError('Must have at least one uppercase character')
+
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Must contain at least a number')
+
+        if not any(char in string.punctuation for char in v):
+            raise ValueError('Must contain at least one special character')
+        
+        return v
+        
+class LoginRequest(BaseModel):
+    email: str
+    password: str
