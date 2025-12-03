@@ -1,5 +1,6 @@
 import aiosqlite
 import logging
+import os
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ CREATE TABLE IF NOT EXISTS clients (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
+    api_key TEXT NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT 1,
     subscription TEXT DEFAULT 'free',
