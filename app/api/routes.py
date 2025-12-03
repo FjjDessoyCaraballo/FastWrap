@@ -141,15 +141,37 @@ async def signup(
     response: Response,
     request: schemas.SignupRequest
 ):
-    http_status = await auth.register_client
+    http_status: int
+    api_key: str
+
+    api_key, http_status = await auth.register_client(request)
+
+    if http_status != status.HTTP_201_CREATED:
+        return {
+            "message": "Error during signup",
+            "status": 401
+        }
     return {
-        "message": "Signup request received", 
+        "message": "Signup request received",
+        "api_key": api_key,
         "status": http_status
         }
 
-@router.post("/auth/login")
-async def login(
-    response: Response,
-    request: schemas.LoginRequest
-):
-    return {}
+# @router.post("/auth/login")
+# async def login(
+#     response: Response,
+#     request: schemas.LoginRequest,
+#     x_api_key: str = Header(..., min_length=36, max_length=36)
+# ):
+#     api_key: str = x_api_key
+#     http_status: int = await auth.login_client(request, api_key)
+    
+#     if http_status != status.HTTP_200_OK:
+#         return {
+#             "message": "Unauthorized",
+#             "status": 401
+#         }
+    
+#     return {
+#         "message": 
+#     }
