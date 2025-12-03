@@ -40,6 +40,9 @@ class SignupRequest(BaseModel):
 
         if not any(char in string.punctuation for char in v):
             raise ValueError('Must contain at least one special character')
+
+        if any(char in string.whitespace for char in v):
+            raise ValueError('Cannot use space, tabs, or any other whitespace characters')
         
         return v
         
