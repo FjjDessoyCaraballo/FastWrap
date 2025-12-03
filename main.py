@@ -40,7 +40,17 @@ app.include_router(router)
 
 if __name__ == "__main__":
     logger.info("Check README for instructions on how to use")
+    import os
+    from pathlib import Path
+
+    PROJECT_ROOT = Path(__file__).parent
+
+    if os.path.isdir('database') is False:
+        logger.info("Database directory not found. Creation new one...")
+        os.mkdir(f'{PROJECT_ROOT}/database')
+    
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host=settings.HOST, 
