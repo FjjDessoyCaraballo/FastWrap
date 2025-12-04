@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS clients (
     password TEXT NOT NULL,
     api_key TEXT NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    delete_at TEXT,
     is_active BOOLEAN DEFAULT 1,
     subscription TEXT DEFAULT 'free',
     store_name TEXT,
