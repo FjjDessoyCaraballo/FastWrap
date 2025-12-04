@@ -21,7 +21,6 @@ async def store_message(request: Completions, character_uuid: str):
         
         chatbot = ChatBot()
 
-        # Adding RAG for first time conversations
         if count_llen == 1:
             status_code: int
             rag, status_code = await chatbot.rag(parsed, character_uuid)
@@ -37,7 +36,7 @@ async def store_message(request: Completions, character_uuid: str):
 
     except HTTPException as e:
         logger.error(f"Network error caught: {e}")
-        raise
+        return None
     except Exception as e:
         logger.error(f"Unexpected error caught: {e}")
-        raise 
+        return None
