@@ -46,7 +46,7 @@ async def characters(
     user = Depends(verify_api_key),
     uuid: str = Path(min_length=36, description="Character UUID")
     ):
-    http_status: int = await character_service.delete_character(uuid, user.id)
+    http_status: int = await character_service.delete_character(uuid, user[0])
     logger.info(f"Received role deletion request")
 
     if http_status == status.HTTP_404_NOT_FOUND:
@@ -59,7 +59,7 @@ async def characters(
     user = Depends(verify_api_key)
     ):
     
-    resource: dict = await character_service.update_character(uuid, request, user.id)
+    resource: dict = await character_service.update_character(uuid, request, user[0])
     logger.info(f"Received role update request")
     
     return {
@@ -75,7 +75,7 @@ async def characters(
 
     agent_role: str
 
-    agent_role = await character_service.get_character(uuid, user.id)
+    agent_role = await character_service.get_character(uuid, user[0])
 
     if agent_role is None:
         raise HTTPException(status_code=404, detail="Resource not found")
@@ -93,7 +93,7 @@ async def characters(
 ):
     agent_roles: dict
 
-    agent_roles = await character_service.get_all_character(user.id)
+    agent_roles = await character_service.get_all_character(user[0])
     
     if agent_role is None:
         raise HTTPException(status_code=404, detail="Resource not found")
@@ -107,7 +107,6 @@ async def characters(
 
 @router.post("/api/chat", status_code=status.HTTP_201_CREATED)
 async def chat(
-    response: Response, 
     request: schemas.Completions,
     user = Depends(verify_api_key)
     ):
@@ -121,11 +120,11 @@ async def chat(
         `request: Completions` - Object that contains UUID, user, and content.
     """
     
-    store_id: str = user.id
+    store_id: str = user[0]
     prompt: dict[str, Any] = await store_message(request, store_id)
 
     if prompt is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detai="Not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detai="Character not set/found")
 
     return {
         "message": "Chat request posted",
