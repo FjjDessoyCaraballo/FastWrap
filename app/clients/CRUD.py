@@ -13,21 +13,21 @@ class crud_management():
     def __init__(self):
         self.DB_PATH = PROJECT_ROOT / "database/fastwrapper.db"
 
-    async def db_insertion_character(self, request: schemas.RoleRequest) -> tuple[str] | None:
+    async def db_insertion_character(self, request: schemas.RoleRequest, store_id: str) -> dict | None:
         logger.info(f"Inserting new character")
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
 
                 if request.TTL is None:
                     cursor = await conn.execute("""
-                    INSERT INTO characters ( uuid, agent_role ) 
-                    VALUES (?, ?)
+                    INSERT INTO characters ( uuid, store_id, agent_role ) 
+                    VALUES ( ? , ? , ? )
                     RETURNING *
-                    """, (request.uuid, request.agent_role))
+                    """, (request.uuid, store_id, request.agent_role))
                 else:
                     cursor = await conn.execute("""
                     INSERT INTO characters ( uuid, agent_role, TTL ) 
-                    VALUES ( ?, ?, ? )
+                    VALUES ( ? , ? , ? )
                     RETURNING *
                     """, (request.uuid, request.agent_role, request.TTL))
 
@@ -50,7 +50,7 @@ class crud_management():
             logger.error(f"Unexpected error: {e}")
             return None
 
-    async def db_update_character(self, uuid: str, request: schemas.RoleRequest) -> tuple[str] | None:
+    async def db_update_character(self, uuid: str, request: schemas.RoleRequest, store_id: str) -> dict | None:
         logger.info("Updating new role")
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
@@ -59,7 +59,7 @@ class crud_management():
                     cursor = await conn.execute('''
                     UPDATE OR ABORT characters
                     SET agent_role = ?
-                    WHERE uuid = ?
+                    WHERE uuid = ? AND store_id = ?
                     RETURNING *
                     ''', 
                     (request.agent_role, uuid))
@@ -70,7 +70,7 @@ class crud_management():
                     WHERE uuid = ?
                     RETURNING *
                     ''', 
-                    (request.agent_role, request.TTL, uuid))
+                    (request.agent_role, request.TTL, uuid, store_id))
 
                 row = await cursor.fetchone()
 
@@ -91,16 +91,16 @@ class crud_management():
             logger.error(f"Unexpected error: {e}")
             return None
 
-    async def db_delete_character(self, uuid: str) -> tuple[str] | None:
-        logger.info(f"Deleting role for ID: {uuid}")
+    async def db_delete_character(self, uuid: str, store_id: str) -> dict | None:
+        logger.info(f"Deleting role for ID")
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
         
                 cursor = await conn.execute('''
                 DELETE FROM characters 
-                WHERE uuid = ?
+                WHERE uuid = ? AND store_id = ?
                 ''', 
-                (uuid,))
+                (uuid, store_id))
         
                 if cursor.rowcount == 0:
                     logger.warning("Resource not deleted because it does not exist.")
@@ -120,7 +120,7 @@ class crud_management():
             logger.error(f"Unexpected error: {e}")
             return None
 
-    async def db_select_character(self, uuid: str) -> tuple[str] | None:
+    async def db_select_character(self, uuid: str, store_id: str) -> dict | None:
         logger.info(f"Fetching role information")
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
@@ -128,15 +128,13 @@ class crud_management():
                 cursor = await conn.execute('''
                 SELECT agent_role 
                 FROM characters 
-                WHERE uuid = ?
-                ''', (uuid,))
+                WHERE uuid = ? AND store_id = ?
+                ''', (uuid, store_id))
                 row = await cursor.fetchone()
         
                 if row is None:
                     logger.warning("uuid does not correspond to any existing IDs in database")
                     return None
-        
-                agent_role = row[0]
         
                 logger.info(f"Successfully fetched data")
         
@@ -149,14 +147,15 @@ class crud_management():
             logger.error(f"Unexpected error: {e}")
             return None
 
-    async def db_select_character_all(self) -> tuple[list[tuple] | None]:
+    async def db_select_character_all(self, store_id: str) -> tuple[list[tuple] | None]:
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
         
                 cursor = await conn.execute('''
                 SELECT * 
                 FROM characters
-                ''')
+                WHERE store_id = ?
+                ''', (store_id,))
                 
                 rows = await cursor.fetchall()
         
