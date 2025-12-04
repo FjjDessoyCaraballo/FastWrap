@@ -1,9 +1,9 @@
-from fastapi import status, Path, APIRouter, Response, Header, HTTPException
+from fastapi import status, Path, APIRouter, Response, Header, HTTPException, Depends
 from ..models import schemas
 from ..clients.chat_service import store_message
 from ..clients import client_service
 from ..clients import character_service
-from ..auth import verify_api_key
+from ..auth.dependencies import verify_api_key
 from typing import Any
 from uuid import UUID
 import logging
@@ -46,7 +46,7 @@ async def characters(
     user = Depends(verify_api_key),
     uuid: str = Path(min_length=36, description="Character UUID")
     ):
-    http_status: int = await character_service.delete_character(uuid)
+    http_status: int = await character_service.delete_character(uuid, user.id)
     logger.info(f"Received role deletion request")
 
     if http_status == status.HTTP_404_NOT_FOUND:
@@ -55,18 +55,16 @@ async def characters(
 @router.patch("/api/characters/{uuid}", status_code=status.HTTP_201_CREATED)
 async def characters(
     request: schemas.PatchRole,
-    response: Response,
     uuid: str = Path(min_length=36, description="Character UUID"),
     user = Depends(verify_api_key)
     ):
     
-    http_status: int = await character_service.update_character(uuid, request)
-    response.status_code = http_status
-    logger.info(f"Received role update request: {request.dict()}")
+    resource: dict = await character_service.update_character(uuid, request, user.id)
+    logger.info(f"Received role update request")
     
     return {
         "message": "Resource updated",
-        "data": request.dict()
+        "data": resource
         }
 
 @router.get("/api/characters/{uuid}", status_code=status.HTTP_200_OK)
@@ -77,7 +75,7 @@ async def characters(
 
     agent_role: str
 
-    agent_role = await character_service.get_character(uuid)
+    agent_role = await character_service.get_character(uuid, user.id)
 
     if agent_role is None:
         raise HTTPException(status_code=404, detail="Resource not found")
@@ -93,10 +91,9 @@ async def characters(
 async def characters(
     user = Depends(verify_api_key)
 ):
-
     agent_roles: dict
 
-    agent_roles = await character_service.get_all_character()
+    agent_roles = await character_service.get_all_character(user.id)
     
     if agent_role is None:
         raise HTTPException(status_code=404, detail="Resource not found")
@@ -112,7 +109,6 @@ async def characters(
 async def chat(
     response: Response, 
     request: schemas.Completions,
-    x_store_id: str = Header(..., min_length=36, max_length=36),
     user = Depends(verify_api_key)
     ):
     """
@@ -125,10 +121,8 @@ async def chat(
         `request: Completions` - Object that contains UUID, user, and content.
     """
     
-    http_status: int 
-    prompt: dict[str, Any]
-    character_uuid: str = x_store_id
-    http_status, prompt = await store_message(request, character_uuid, api_key)
+    store_id: str = user.id
+    prompt: dict[str, Any] = await store_message(request, store_id)
 
     if prompt is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detai="Not found")
