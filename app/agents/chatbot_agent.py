@@ -25,11 +25,11 @@ class ChatBot():
         response = self.agent.invoke({"messages": parsed_messages})
         return response
 
-    async def rag(self, messages: list[dict[str, str]], uuid: str) -> list[dict[str, str]]:
+    async def context(self, messages: list[dict[str, str]], uuid: str) -> list[dict[str, str]]:
         try:
             crud = crud_management()
-            rag, status_code = await crud.db_select_character(uuid)
-            return rag, status_code
+            context = await crud.db_select_character(uuid)
+            return context
         except Exception as e:
             logger.error(f"Caught unexpected error: {e}")
             raise
