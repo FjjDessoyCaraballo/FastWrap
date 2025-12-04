@@ -20,7 +20,7 @@ class Completions(BaseModel):
 class ServiceRoleRequest(BaseModel):
     uuid: str = Field(..., min_length=36, description="Unique user ID that serves as a general identifier for users and clients")
 
-class SignupRequest(BaseModel):
+class AuthRequest(BaseModel):
     email: EmailStr
     password: str
 
@@ -45,7 +45,4 @@ class SignupRequest(BaseModel):
             raise ValueError('Cannot use space, tabs, or any other whitespace characters')
         
         return v
-        
-class LoginRequest(BaseModel):
-    email: str
-    password: str
+
