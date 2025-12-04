@@ -77,7 +77,7 @@ flowchart TB
     LA -->|"Check inventory"| TOOL
     LA -->|"Generate response"| LLM
     
-    %% RAG System
+    %% context System
     CHS -->|"Provides context"| LA
     SQLITE -->|"Agent roles & instructions"| LA
 
@@ -139,9 +139,9 @@ flowchart TB
 #### External Integration:
 - **LLM Provider**: Connected via LangChain for AI responses
 
-## RAG System Structure
+## context System Structure
 
-The RAG (Retrieval-Augmented Generation) system is structured as follows:
+The context (Retrieval-Augmented Generation) system is structured as follows:
 
 1. **Context Storage**: Character roles and instructions stored in SQLite
 2. **Context Retrieval**: Character Service fetches relevant role/instructions based on UUID
