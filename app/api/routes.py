@@ -1,8 +1,8 @@
 from fastapi import status, Path, APIRouter, Response, Header, HTTPException, Depends
 from ..models import schemas
-from ..clients.chat_service import store_message
-from ..clients import client_service
-from ..clients import character_service
+from ..chat.service import store_message
+from ..clients import service as client_service
+from ..characters import service as character_service
 from ..auth.dependencies import verify_api_key
 from typing import Any
 from uuid import UUID
@@ -18,21 +18,49 @@ async def root():
     logger.info("Received request at root") 
     
     return ({ 
-        "Title": "VanaciPrime Chatbot Wrapper",
+        "Title": "FastWrap Chatbot wrapper",
         "Version": "1.0.0.",
         "Author": "Felipe",
         "Status": "Development"
         })
  
 @router.post("/api/characters")
-async def characters(
-    request: schemas.RoleRequest,
+async def create_characters(
+    request: schemas.ServiceRole,
     user = Depends(verify_api_key) 
     ):
+    """
+    Endpoint responsible to for storage of characters in the database. Characters 
+    are an agent configuration system doing dynamic system prompt injection. In simpler
+    words it gives a characteristic, a personality, to the chatbot, and because of that
+    they should be essential instructions.
+
+    Parameters
+    ----------
+    request : RoleRequest
+        Object defined and validated by pydantic class BaseModel in `/app/models/schemas.py`.
+        Mandatorily, it requires an `uuid` and `agent_role`, with the optional setting of a TTL
+        (Time To Live).
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+
+    Returns
+    -------
+    resource : dict
+        Created object that mirrors the data inserted into the database.
+    """
     
-    resource: dict = await character_service.store_character(request)
+    store_id: str = user[0]
+
+    resource: dict = await character_service.store_character(request, store_id)
+
     if resource is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Character not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Character not found"
+            )
     logger.info("Received role creation request.")
 
     return {
@@ -41,25 +69,71 @@ async def characters(
         }
 
 @router.delete("/api/characters/{uuid}", status_code=status.HTTP_204_NO_CONTENT)
-async def characters(
-    request: schemas.RoleRequest,
+async def delete_characters(
     user = Depends(verify_api_key),
     uuid: str = Path(min_length=36, description="Character UUID")
     ):
-    http_status: int = await character_service.delete_character(uuid, user[0])
+    """
+    Endpoint for deletion of characters. Characters are an agent configuration system 
+    doing dynamic system prompt injection. In simpler words it gives a characteristic, 
+    a personality, to the chatbot, and because of that they should be essential instructions.
+    
+    Parameters:
+    -----------
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+
+    uuid : str
+        String containing unique user ID given during creation of character.
+
+    Returns:
+    --------
+    None
+    """
+    store_id: str = user[0]
+
+    http_status: int = await character_service.delete_character(uuid, store_id)
     logger.info(f"Received role deletion request")
 
     if http_status == status.HTTP_404_NOT_FOUND:
         raise HTTPException(status_code=404, detail="Resource not found")
  
 @router.patch("/api/characters/{uuid}", status_code=status.HTTP_201_CREATED)
-async def characters(
-    request: schemas.PatchRole,
+async def update_characters(
+    request: schemas.ServiceRole,
     uuid: str = Path(min_length=36, description="Character UUID"),
     user = Depends(verify_api_key)
     ):
+    """
+    Endpoint for patching pre-existing characters. Characters are an agent configuration 
+    system doing dynamic system prompt injection. In simpler words it gives a characteristic,
+    a personality, to the chatbot, and because of that they should be essential instructions.
     
-    resource: dict = await character_service.update_character(uuid, request, user[0])
+    Parameters:
+    -----------
+    request : ServiceRole
+        Object defined by schema ServiceRole that should contain the `agent_role` and,
+        optionally, a TTL in seconds.
+    
+    uuid : str
+        String containing unique user ID given during creation of character.    
+
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+
+    Returns:
+    --------
+    resource : dict
+        Created object that mirrors the data inserted into the database.
+    """
+
+    store_id: str = user[0]
+    
+    resource: dict = await character_service.update_character(uuid, request, store_id)
     logger.info(f"Received role update request")
     
     return {
@@ -68,10 +142,31 @@ async def characters(
         }
 
 @router.get("/api/characters/{uuid}", status_code=status.HTTP_200_OK)
-async def characters(
+async def get_characters(
     uuid: str = Path(min_length=36, description="Character UUID"),
     user = Depends(verify_api_key)
     ):
+    """
+    Getter endpoint for a single character object under specific API key. Characters are an 
+    agent configuration system doing dynamic system prompt injection. In simpler words it
+    gives a characteristic, a personality, to the chatbot, and because of that they should 
+    be essential instructions.
+
+    Parameters:
+    -----------
+    uuid : str
+        String containing unique user ID given during creation of character.
+
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+    
+    Returns:
+    --------
+    agent_role : str
+        String containing requested role from uuid.
+    """
 
     agent_role: str
 
@@ -88,14 +183,29 @@ async def characters(
         }
 
 @router.get("/api/characters", status_code=status.HTTP_200_OK)
-async def characters(
-    user = Depends(verify_api_key)
-):
-    agent_roles: dict
+async def get_all_characters(user = Depends(verify_api_key)):
+    """
+    Getter endpoint for all characters objects under specific API key. Characters are an agent
+    configuration system doing dynamic system prompt injection. In simpler words it gives a 
+    characteristic, a personality, to the chatbot, and because of that they should be essential 
+    instructions.
 
-    agent_roles = await character_service.get_all_character(user[0])
+    Parameters:
+    -----------
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+
+    Returns:
+    --------
+    agent_roles : str
+        Dictionary containing all roles from specific store_id.
+
+    """
+    agent_roles: dict = await character_service.get_all_character(user[0])
     
-    if agent_role is None:
+    if agent_roles is None:
         raise HTTPException(status_code=404, detail="Resource not found")
     
     logger.info(f"Received role fetch request: {agent_roles}")
@@ -116,15 +226,28 @@ async def chat(
     The endpoint itself needs an UUID to identify the user. If the chat is available still, the UUID
     will be used to identify the chat.
 
-    :Parameters:
-        `request: Completions` - Object that contains UUID, user, and content.
+    Parameters:
+    -----------
+    request : Completions
+        Object that contains UUID, user, and content.
+    
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+
+    Returns:
+    --------
+    prompt : dict[str, Any]
+        OpenAI Completions JSON formatted object. If you are unfamiliar with such concept, you
+        can check the documentation of this object at https://platform.openai.com/docs/api-reference/completions
     """
     
     store_id: str = user[0]
     prompt: dict[str, Any] = await store_message(request, store_id)
 
     if prompt is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detai="Character not set/found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Character not set/found")
 
     return {
         "message": "Chat request posted",
@@ -136,49 +259,95 @@ async def health():
     return {"Health": "OK"}
 
 @router.post("/auth/signup", status_code=status.HTTP_201_CREATED)
-async def signup(
-    request: schemas.AuthRequest
-):
-    api_key: str
+async def signup(request: schemas.AuthRequest):
+    """
+    Signup endpoint for direct users. This endpoint is the entrypoint for usage of all
+    other service endpoints. 
+    """
 
-    api_key, resource = await client_service.register_client(request)
+    resource: dict = await client_service.register_client(request)
 
-    if api_key is None or resource is None:
+    if resource is None:
         raise HTTPException(status_code=400, detail="Failed to create account")
     return {
         "message": "Signup request received",
-        "api_key": api_key,
         "data": resource
         }
 
 @router.get("/api/clients/me", status_code=status.HTTP_200_OK)
-async def clients(
-    request: schemas.AuthRequest,
-    ):
-
-    api_key: str = x_api_key
-
-    resource: tuple[str, str] = await client_service.get_client(request)
-
-    if resource is None:
-        raise HTTPException(status_code=404, detail="Resource not found")
+async def get_clients(user = Depends(verify_api_key)):
+    """
     
+    Parameters:
+    -----------
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+    """
+
     logger.info(f"Received role fetch request")
     
     return {
         "message": "Character fetched",
+        "data": user
+        }
+
+@router.patch("/clients/me", status_code=status.HTTP_201_CREATED)
+async def update_clients(
+    request: schemas.UpdateRequest,
+    user = Depends(verify_api_key)
+    ):
+    """
+    """
+    store_id: str = user[0]
+    
+    resource, http_status = await client_service.update_client(store_id, request)
+
+    if resource is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+        detail="No maching credentials")
+    elif http_status == 422:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail="Malformed JSON")
+    
+    return {
+        "message": "Resource updated",
         "data": resource
+    }
+
+@router.post("/clients/me/regenerate-key", status_code=status.HTTP_201_CREATED)
+async def update_client_key(user = Depends(verify_api_key)):
+    
+    store_id: str = user[0]
+
+    new_key: str = await client_service.regenerate_key(store_id)
+
+    if new_key is None:
+        logger.error("Failed to recreate key for client")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+
+    return {
+        "message": "New key generated",
+        "API key": new_key
         }
 
 @router.delete("/clients/me", status_code=status.HTTP_204_NO_CONTENT)
-async def clients(
-    request: schemas.AuthRequest,
-):
-    http_status: int = await client_service.delete_client(request, api_key)
+async def delete_clients(user = Depends(verify_api_key)):
+    """
+    Parameters:
+    -----------
+    
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+    """
+    store_id = user[0]
+
+    http_status: int = await client_service.delete_client(store_id)
     
     if http_status is None:
+        logger.error("Could not delete clients account")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     
-    return {
-        "message": "Resource deleted"
-    }

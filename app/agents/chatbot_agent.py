@@ -1,5 +1,5 @@
 import logging
-from ..clients.CRUD import crud_management
+from ..characters.repository import crud_management
 # from .tools import check_products
 from config import settings
 from langchain.agents import create_agent

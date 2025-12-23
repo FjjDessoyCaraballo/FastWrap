@@ -1,5 +1,5 @@
 from fastapi import Header, HTTPException, status
-from ..clients.CRUD import crud_management
+from ..clients.repository import crud_management
 import bcrypt
 
 crud = crud_management()

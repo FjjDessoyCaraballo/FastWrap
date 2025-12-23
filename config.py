@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 from typing import Optional
 
 class Settings(BaseSettings):
-    VANACIPRIME_API_KEY: str
+    FASTWRAP_API_KEY: str
     REDIS_API_KEY: str
     REDIS_HOST: str
     REDIS_PORT: int

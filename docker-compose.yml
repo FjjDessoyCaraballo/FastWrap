@@ -4,7 +4,7 @@ services:
     ports:
       - "${PORT:-8555}:8555"
     environment:
-      - VANACIPRIME_API_KEY=${VANACIPRIME_API_KEY}
+      - FASTWRAP_API_KEY=${FASTWRAP_API_KEY}
       - PORT=${PORT}
       - HOST=${HOST}
       - MODEL=${MODEL}

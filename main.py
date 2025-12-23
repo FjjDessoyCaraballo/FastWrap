@@ -2,12 +2,18 @@ from fastapi import FastAPI, status
 from config import settings
 from contextlib import asynccontextmanager
 from app.api.routes import router
-from app.clients.redis_client import redis_client
-from app.clients.database_creation import db_creation
+from app.infrastructure.redis_client import redis_client
+from app.database.init import db_creation
+from pathlib import Path
 import sys
+import os
 import logging
 
 # Logging (terminal and logfile)
+PROJECT_ROOT = Path(__file__).parent
+if os.path.isdir('logs') is False:
+    os.mkdir(f'{PROJECT_ROOT}/logs')
+
 file_handler = logging.FileHandler('logs/logfile.log')
 console_handler = logging.StreamHandler(sys.stderr)
 formatter= logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -15,11 +21,11 @@ file_handler.setFormatter(formatter)
 console_handler.setFormatter(formatter)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
 if not logger.handlers:
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
 
-# FastAPI setup
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> None:
     logger.info("Initializing database...")
@@ -31,7 +37,7 @@ async def lifespan(app: FastAPI) -> None:
 
 app = FastAPI(
     title="API-wrapper-backend",
-    description="Wrapper para serviços de chatbot da VanaciPrime",
+    description="Wrapper para serviços de chatbot",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -40,8 +46,6 @@ app.include_router(router)
 
 if __name__ == "__main__":
     logger.info("Check README for instructions on how to use")
-    import os
-    from pathlib import Path
 
     PROJECT_ROOT = Path(__file__).parent
 
