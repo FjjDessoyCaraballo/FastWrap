@@ -4,6 +4,8 @@ from typing import Optional
 class Settings(BaseSettings):
     FASTWRAP_API_KEY: str
     REDIS_API_KEY: str
+    REDIS_USER: str
+    REDIS_USER_PW: str
     REDIS_HOST: str
     REDIS_PORT: int
     PORT: int
