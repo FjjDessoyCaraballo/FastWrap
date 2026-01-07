@@ -24,7 +24,7 @@ async def root():
         "Status": "Development"
         })
  
-@router.post("/api/characters")
+@router.post("/api/characters", status_code=status.HTTP_201_CREATED)
 async def create_characters(
     request: schemas.ServiceRole,
     user = Depends(verify_api_key) 

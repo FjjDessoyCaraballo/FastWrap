@@ -15,7 +15,7 @@ class crud_management():
     async def db_insert_client(self, email: str, password: str) -> dict | None:
         try:
             hashed_password: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode('utf-8')
-            api_key: str = f"vcp_{secrets.token_urlsafe(32)}"
+            api_key: str = f"fn_{secrets.token_urlsafe(32)}"
             async with aiosqlite.connect(self.DB_PATH) as conn:
 
                 cursor = await conn.execute('''
@@ -175,7 +175,7 @@ class crud_management():
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
 
-                new_key: str = f"vcp_{secrets.token_urlsafe(32)}"
+                new_key: str = f"fn_{secrets.token_urlsafe(32)}"
 
                 cursor = await conn.execute('''
                     UPDATE OR ABORT clients

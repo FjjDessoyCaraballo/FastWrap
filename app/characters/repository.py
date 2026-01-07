@@ -30,7 +30,7 @@ class crud_management():
                     RETURNING *
                     """, (uid, store_id, request.agent_role, request.TTL))
 
-                row = cursor.fetchone()
+                row = await cursor.fetchone()
 
                 if row is None:
                     logger.warning("Resource could not be created.")

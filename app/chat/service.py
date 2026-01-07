@@ -6,6 +6,9 @@ from typing import Any
 import logging
 import json
 
+from config import settings
+
+
 logger = logging.getLogger(__name__)
 
 async def store_message(request: Completions, store_id: str):
@@ -19,14 +22,17 @@ async def store_message(request: Completions, store_id: str):
         logging.debug(f"Parsed request for {request.uuid}")
         logger.info(f"count_llen: {count_llen}")
 
+        logger.info(f"Parsed payload: {parsed}")
+        logger.info(f"Messages: {messages}")
         chatbot = ChatBot()
 
         if count_llen == 1:
             status_code: int
-            context = await chatbot.context(parsed, request.uuid)
+            context = await chatbot.context(parsed, request.uuid, store_id)
+            logger.info(f"context: {context}")
             if context is None:
                 return None
-            await r.lpush(f"chat:{store_id}:{request.uuid}", json.dumps({"role": "system", "content": context}))
+            await r.lpush(f"chat:{store_id}:{request.uuid}", json.dumps({"role": "system", "content": context[0]}))
             messages: list[str] = await r.lrange(f"chat:{store_id}:{request.uuid}", 0, -1)
             parsed: list[dict[str, str]] = [json.loads(msg) for msg in messages]
 
@@ -40,5 +46,5 @@ async def store_message(request: Completions, store_id: str):
         logger.error(f"Network error caught: {e}")
         return None
     except Exception as e:
-        logger.error(f"Unexpected error caught: {e}")
+        logger.error(f"Unexpected error at store_message caught: {e}")
         return None

@@ -22,16 +22,19 @@ class ChatBot():
                 )
 
     async def chat(self, parsed_messages: list[dict[str, str]]) -> dict[str, Any]:
-        response = self.agent.invoke({"messages": parsed_messages})
+        try:
+            response = self.agent.invoke({"messages": parsed_messages})
+        except Exception as e:
+            logger.error(f"Unexpected error at chat method: {e}")
         return response
 
-    async def context(self, messages: list[dict[str, str]], uuid: str) -> list[dict[str, str]]:
+    async def context(self, messages: list[dict[str, str]], uuid: str, store_id: str) -> list[dict[str, str]]:
         try:
             crud = crud_management()
-            context = await crud.db_select_character(uuid)
+            context = await crud.db_select_character(uuid, store_id)
             return context
         except Exception as e:
-            logger.error(f"Caught unexpected error: {e}")
+            logger.error(f"Caught unexpected error at context: {e}")
             raise
 
     def _detect_provider(self) -> BaseChatModel:

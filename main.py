@@ -16,7 +16,7 @@ if os.path.isdir('logs') is False:
 
 file_handler = logging.FileHandler('logs/logfile.log')
 console_handler = logging.StreamHandler(sys.stderr)
-formatter= logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 console_handler.setFormatter(formatter)
 logger = logging.getLogger()
