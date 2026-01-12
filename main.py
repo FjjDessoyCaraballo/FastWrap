@@ -3,7 +3,7 @@ from config import settings
 from contextlib import asynccontextmanager
 from app.api.routes import router
 from app.infrastructure.redis_client import redis_client
-from app.database.init import db_creation
+from app.database.init import init_db, close_db
 from pathlib import Path
 import sys
 import os
@@ -29,11 +29,12 @@ if not logger.handlers:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> None:
     logger.info("Initializing database...")
-    await db_creation()
+    await init_db()
     logger.info("Database ready!")
     yield
     # Shut down functions later go here
     logger.info("Shutting down application...")
+    await close_db()
 
 app = FastAPI(
     title="API-wrapper-backend",
