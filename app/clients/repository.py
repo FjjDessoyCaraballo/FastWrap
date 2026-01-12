@@ -17,7 +17,7 @@ class crud_management():
             hashed_password: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode('utf-8')
             api_key: str = f"fn_{secrets.token_urlsafe(32)}"
             async with aiosqlite.connect(self.DB_PATH) as conn:
-
+                conn.row_factory = aiosqlite.Row
                 cursor = await conn.execute('''
                 INSERT INTO clients ( email, password, api_key )
                 VALUES ( ? , ? , ? )
@@ -34,7 +34,7 @@ class crud_management():
 
                 await conn.commit()
 
-                return resource
+                return dict(resource)
 
         except aiosqlite.IntegrityError:
             logger.warning(f'Email already exists in database: {email}')
@@ -49,6 +49,8 @@ class crud_management():
     async def db_select_client(self, email: str, password: str):
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
+
                 cursor = await conn.execute('''
                 SELECT id, password
                 FROM clients
@@ -69,7 +71,7 @@ class crud_management():
 
                 logger.info("User properly identified")
 
-                return row
+                return dict(row)
 
         except aiosqlite.DatabaseError as e:
             logger.error(f'Database error: {e}')
@@ -82,6 +84,7 @@ class crud_management():
     async def db_select_client_by_key(self, api_key: str) -> dict | None:
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
                 cursor = await conn.execute('''
                 SELECT id, email, api_key
                 FROM clients
@@ -96,7 +99,7 @@ class crud_management():
 
                 logger.info("API key properly identified")
 
-                return resource
+                return dict(resource)
 
         except aiosqlite.DatabaseError as e:
             logger.error(f'Database error: {e}')
@@ -120,7 +123,7 @@ class crud_management():
                     logger.warning("Email was deleted by another process")
                     return None
 
-                http_status = status.HTTP_204_NO_CONTENT
+                http_status: int = status.HTTP_204_NO_CONTENT
 
                 await conn.commit()
 
@@ -137,6 +140,7 @@ class crud_management():
         logger.info('Updating client account')
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
                 if password is None:
                     cursor = await conn.execute('''
                         UPDATE OR ABORT clients
@@ -153,7 +157,7 @@ class crud_management():
                         RETURNING *
                     ''', (hashed_password, store_id))
 
-                row = await cursor.fetchone()
+                row: tuple = await cursor.fetchone()
 
                 if row is None:
                     logger.warning("Update client failed")
@@ -162,7 +166,9 @@ class crud_management():
                 await conn.commit()
 
                 logger.info("Updated client successfully")
-                return row
+                
+                return dict(row)
+
         except aiosqlite.DatabaseError as e:
             logger.error(f"Database error: {e}")
             return None
@@ -171,7 +177,7 @@ class crud_management():
             return None
 
 
-    async def db_regenerate_key(self, store_id: str):
+    async def db_regenerate_key(self, store_id: str) -> dict | None:
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
 
@@ -183,13 +189,16 @@ class crud_management():
                     WHERE id = ?
                 ''', (new_key, store_id))
 
-                row = await cursor.fetchone()
+                row: tuple = await cursor.fetchone()
 
                 if row is None:
                     logger.warning("Failed to regenerate key")
                     return None
+                
+                resource: dict = { "new key": new_key }
+                
+                return resource
 
-                return new_key
         except aiosqlite.DatabaseError as e:
             logger.error(f"Database error: {e}")
             return None

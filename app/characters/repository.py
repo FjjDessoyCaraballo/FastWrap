@@ -16,6 +16,7 @@ class crud_management():
         logger.info(f"Inserting new character")
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
                 uid = str(uuid.uuid4())
                 if request.TTL is None:
                     cursor = await conn.execute("""
@@ -40,7 +41,7 @@ class crud_management():
 
                 logger.info("Successfully created ID with new role")
 
-                return row
+                return dict(row)
 
         except aiosqlite.DatabaseError as e:
             logger.error(f"Database error: {e}")
@@ -53,6 +54,7 @@ class crud_management():
         logger.info("Updating new role")
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
 
                 if request.TTL is None:
                     cursor = await conn.execute('''
@@ -81,7 +83,7 @@ class crud_management():
 
                 logger.info("Successfully update ID with new role")
 
-                return row
+                return dict(row)
 
         except aiosqlite.DatabaseError as e:
             logger.error(f"Database error: {e}")
@@ -94,6 +96,7 @@ class crud_management():
         logger.info(f"Deleting role for ID")
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
+
 
                 cursor = await conn.execute('''
                 DELETE FROM characters
@@ -123,6 +126,7 @@ class crud_management():
         logger.info(f"Fetching role information")
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
 
                 cursor = await conn.execute('''
                 SELECT agent_role
@@ -137,7 +141,7 @@ class crud_management():
 
                 logger.info(f"Successfully fetched data")
 
-                return row
+                return dict(row)
 
         except aiosqlite.DatabaseError as e:
             logger.error(f"Database error: {e}")
@@ -149,6 +153,7 @@ class crud_management():
     async def db_select_character_all(self, store_id: str) -> tuple[list[tuple] | None]:
         try:
             async with aiosqlite.connect(self.DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
 
                 cursor = await conn.execute('''
                 SELECT *
@@ -164,7 +169,7 @@ class crud_management():
 
                 logger.info("retrieving all characters information")
 
-                return rows
+                return dict(rows)
 
         except aiosqlite.DatabaseError as e:
             logger.error(f"Database error: {e}")
