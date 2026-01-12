@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     MODEL_PROVIDER: str | None = None
     LANGCHAIN_API_KEY: str | None = None
     LANGSMITH_TRACING_V2: bool = True
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int = 5432
+    POSTGRES_DB: str
+    POSTGRES_USER: str
+    POSTGRES_PW: str
+    DATABASE_URL: str
     class Config:
         env_file = ".env"
 
