@@ -1,0 +1,39 @@
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Minimal 'version marker' so startup knows whether schema is already applied
+CREATE TABLE IF NOT EXISTS app_schema (
+    version INTEGER PRIMARY KEY,
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS clients (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email           TEXT NOT NULL,
+    password        TEXT NOT NULL,
+    api_key         TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at      TIMESTAMPTZ,
+    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    subscription    TEXT NOT NULL DEFAULT 'free',
+    store_name      TEXT,
+    phone           TEXT
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_email_active
+ON clients (email)
+WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS characters (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id   UUID NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+    agent_role  TEXT NOT NULL,
+    ttl         INTEGER,
+    deleted_at  TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_characters_client_id ON characters (client_id);
+
+INSERT INTO app_schema(version)
+VALUES (1)
+ON CONFLICT (version) DO NOTHING;

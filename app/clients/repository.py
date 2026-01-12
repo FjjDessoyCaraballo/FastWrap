@@ -1,196 +1,225 @@
-import aiosqlite
+import asyncpg
+import uuid
 import logging
 import secrets
 import bcrypt
+from asyncpg.exceptions import UniqueViolationError
 from pathlib import Path
 from fastapi import status
+from ..database.init import init_db
 
 logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
-class crud_management():
-    def __init__(self):
-        self.DB_PATH = PROJECT_ROOT / "database/fastwrapper.db"
-
-    async def db_insert_client(self, email: str, password: str) -> dict | None:
+class crud_management:
+    async def db_insert_client(self, email: str, password: str):
+        """
+        Inserts a new client (active) and returns a tuple-like row (keeps your existing calling style).
+        """
         try:
-            hashed_password: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode('utf-8')
+            hashed_pw: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")
             api_key: str = f"fn_{secrets.token_urlsafe(32)}"
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-
-                cursor = await conn.execute('''
-                INSERT INTO clients ( email, password, api_key )
-                VALUES ( ? , ? , ? )
-                RETURNING *
-                ''', (email, hashed_password, api_key))
-
-                resource = await cursor.fetchone()
-
-                if resource is None:
-                    logger.warning("Failed to create resource")
-                    return None, None
-
-                logger.debug('user registered')
-
-                await conn.commit()
-
-                return resource
-
-        except aiosqlite.IntegrityError:
-            logger.warning(f'Email already exists in database: {email}')
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO clients (email, password, api_key)
+                    VALUES ($1, $2, $3)
+                    RETURNING id, email, api_key, created_at, deleted_at, is_active, subscription, store_name, phone
+                    """,
+                    email, hashed_pw, api_key
+                )
+            if row is None:
+                logger.warning('Failed to create client resource')
+                return None
+            return tuple(row)
+        except UniqueViolationError:
+            # Our partial unique index on (email) WHERE deleted_at IS NULL triggers this.
+            logger.warning(f"Email already exists (active client): {email}")
             return None
-        except aiosqlite.DatabaseError as e:
-            logger.error(f'Database error: {e}')
+        except asyncpg.PostgresError as e:
+            logger.error(f"Database error: {e}")
             return None
         except Exception as e:
-            logger.error(f'Unexpected error: {e}')
+            logger.error(f"Unexpected error: {e}")
             return None
+    
 
+    
     async def db_select_client(self, email: str, password: str):
+        """
+        Auth-like lookup. Returns (id, password_hash) if password matches, else None.
+        """
         try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-                cursor = await conn.execute('''
-                SELECT id, password
-                FROM clients
-                WHERE email = ?
-                ''', (email,))
-
-                row = await cursor.fetchone()
-
-                if row is None:
-                    logger.warning("No matching email in attempt")
-                    return None
-
-                stored_pw_hash = row[1]
-
-                if not bcrypt.checkpw(password.encode(), stored_pw_hash.encode()):
-                    logger.warning("Wrong password attempt")
-                    return None
-
-                logger.info("User properly identified")
-
-                return row
-
-        except aiosqlite.DatabaseError as e:
-            logger.error(f'Database error: {e}')
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    SELECT id, password
+                    FROM clients
+                    WHERE email = $1
+                        AND deleted_at IS NULL
+                        AND is_active = TRUE
+                    """, email
+                )
+            if row is None:
+                logger.warning('No matching email (or client inactive/deleted)')
+                return None
+            stored_pw = row['password']
+            if not bcrypt.checkpw(password.encode(), stored_pw.encode()):
+                logger.warning('Invalid credentials')
+                return None
+            return (row['id'], row['password'])
+        except asyncpg.PostgresError as e:
+            logger.error(f"Database error: {e}")
             return None
         except Exception as e:
-            logger.error(f'Unexpected error: {e}')
+            logger.error(f"Unexpected error: {e}")
             return None
-
-
-    async def db_select_client_by_key(self, api_key: str) -> dict | None:
+    
+    async def db_select_client_by_key(self, api_key: str):
+        """
+        Used by verify_api_key dependency. Returns (id, email, api_key) tuple.
+        """
         try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-                cursor = await conn.execute('''
-                SELECT id, email, api_key
-                FROM clients
-                WHERE api_key = ?
-                ''', (api_key,))
-
-                resource = await cursor.fetchone()
-
-                if resource is None:
-                    logger.warning("No matching key in attempt")
-                    return None
-
-                logger.info("API key properly identified")
-
-                return resource
-
-        except aiosqlite.DatabaseError as e:
-            logger.error(f'Database error: {e}')
-            return None
-        except Exception as e:
-            logger.error(f'Unexpected error: {e}')
-            return None
-
-    async def db_delete_client(self, store_id: str) -> int | None:
-        logger.info(f"Deleting client account")
-        try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-
-                cursor = await conn.execute('''
-                DELETE FROM clients
-                WHERE id = ?
-                ''',
-                (store_id,))
-
-                if cursor.rowcount == 0:
-                    logger.warning("Email was deleted by another process")
-                    return None
-
-                http_status = status.HTTP_204_NO_CONTENT
-
-                await conn.commit()
-
-                return http_status
-
-        except aiosqlite.DatabaseError as e:
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    SELECT id, email, api_key
+                    FROM clients
+                    WHERE api_key = $1
+                        AND deleted_at IS NULL
+                        AND is_active = TRUE
+                    """, api_key
+                )
+            if row is None:
+                logger.warning('No matching API key (or client inactive/deleted)')
+                return None
+            return (row['id'], row['email'], row['api_key'])
+        except asyncpg.PostgresError as e:
             logger.error(f"Database error: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return None
 
-    async def db_update_client(self, store_id: str, email: str, password: str):
+    async def db_delete_client(self, client_id: str) -> int | None:
+        """
+        Soft delete client.
+        """
+        logger.info("Deleting client account")
+        try:
+            id = uuid.UUID(client_id)
+
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                deleted = await conn.fetchval(
+                    """
+                    UPDATE clients
+                    SET deleted_at = now(),
+                        is_active = FALSE
+                    WHERE id = $1
+                      AND deleted_at IS NULL
+                    RETURNING id
+                    """, id
+                )
+            if deleted is None:
+                logger.warning('Client not deleted (not found or already deleted)')
+                return None
+            return status.HTTP_204_NO_CONTENT
+        except (ValueError, TypeError):
+            logger.error('Invalid UUID for store_id')
+            return None
+        except asyncpg.PostgresError as e:
+            logger.error(f"Database error: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            return None
+    
+    async def db_update_client(self, client_id: str, email: str | None, password: str | None):
+        """
+        Updates either email or password (your service layer prevents both at once).
+        Returns updated row tuple or None.
+        """
         logger.info('Updating client account')
         try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-                if password is None:
-                    cursor = await conn.execute('''
-                        UPDATE OR ABORT clients
-                        SET email = ?
-                        WHERE id = ?
-                        RETURNING *
-                    ''', (email, store_id))
-                elif email is None:
-                    hashed_password: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode('utf-8')
-                    cursor = await conn.execute('''
-                        UPDATE OR ABORT clients
-                        SET password = ?
-                        WHERE id = ?
-                        RETURNING *
-                    ''', (hashed_password, store_id))
-
-                row = await cursor.fetchone()
-
-                if row is None:
-                    logger.warning("Update client failed")
+            id = uuid.UUID(client_id)
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                if password is None and email is not None:
+                    row = await conn.fetchrow(
+                        """
+                        UPDATE clients
+                        SET email = $1
+                        WHERE id = $2
+                            AND deleted_at IS NULL
+                        RETURNING id, email, api_key, created_at, deleted_at, is_active, subscription, store_name, phone
+                        """,
+                        email, id
+                    )
+                elif email is None and password is not None:
+                    hashed_pw: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")
+                    row = await conn.fetchrow(
+                        """
+                        UPDATE clients
+                        SET password = $1
+                        WHERE id = $2
+                            AND deleted_at IS NULL
+                        RETURNING id, email, api_key, created_at, deleted_at, is_active, subscription, store_name, phone
+                        """,
+                        hashed_pw, id 
+                    )
+                else:
                     return None
+            if row is None:
+                logger.warning("Update client failed (not found or deleted)")
+                return None
 
-                await conn.commit()
+            return tuple(row)
 
-                logger.info("Updated client successfully")
-                return row
-        except aiosqlite.DatabaseError as e:
+        except UniqueViolationError:
+            logger.warning(f"Email already exists (active client): {email}")
+            return None
+        except (ValueError, TypeError):
+            logger.error("Invalid UUID for store_id")
+            return None
+        except asyncpg.PostgresError as e:
             logger.error(f"Database error: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return None
-
-
-    async def db_regenerate_key(self, store_id: str):
+    
+    async def db_regenerate_key(self, client_id: str) -> str | None:
+        """
+        Generates and stores a new api_key, returns it.
+        """
         try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-
-                new_key: str = f"fn_{secrets.token_urlsafe(32)}"
-
-                cursor = await conn.execute('''
-                    UPDATE OR ABORT clients
-                    SET api_key = ?
-                    WHERE id = ?
-                ''', (new_key, store_id))
-
-                row = await cursor.fetchone()
-
-                if row is None:
-                    logger.warning("Failed to regenerate key")
-                    return None
-
-                return new_key
-        except aiosqlite.DatabaseError as e:
+            id = uuid.UUID(client_id)
+            new_key: str = f"fn_{secrets.token_urlsafe(32)}"
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                updated = await conn.fetchval(
+                    """
+                    UPDATE clients
+                    SET api_key = $1
+                    WHERE id = $2
+                      AND deleted_at IS NULL
+                      AND is_active = TRUE
+                    RETURNING api_key
+                    """,
+                    new_key, id
+                )
+            if updated is None:
+                logger.warning('Failed to regenerate key (not found/inactive/deleted)')
+                return None
+            return updated
+        except (ValueError, TypeError):
+            logger.error("Invalid UUID for store_id")
+            return None
+        except asyncpg.PostgresError as e:
             logger.error(f"Database error: {e}")
             return None
         except Exception as e:
