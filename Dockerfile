@@ -6,12 +6,12 @@ COPY pyproject.toml uv.lock ./
    
 RUN apt-get update && apt-get install -y curl && \
     curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    /root/.local/bin/uv sync --frozen
+    mv /root/.local/bin/uv /usr/local/bin/uv
   
 COPY . .
    
 EXPOSE 8555
  
-ENV PATH="/root/.local/bin:$PATH"
+ENV UV_CACHE_DIR=/tmp/uv-cache
 
 CMD ["uv", "run", "main.py"]
