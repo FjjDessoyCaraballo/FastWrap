@@ -43,20 +43,23 @@ async def _create_pool_with_retry(dsn: str, attempts: int = 30, delay_s: float =
     raise RuntimeError(f"Could not connect to Postgres after {attempts} attempts: {last_err}")
 
 async def _ensure_schema(pool: asyncpg.Pool) -> None:
-    sql_text = SCHEMA_PATH.read_text(encoding='utf-8')
+    sql_text = SCHEMA_PATH.read_text(encoding="utf-8")
     statements = _split_sql_statements(sql_text)
+
     async with pool.acquire() as conn:
         reg = await conn.fetchval("SELECT to_regclass('public.app_schema')")
         if reg is not None:
-            current = await conn.fetchval('SELECT MAX(version) FROM app_schema')
+            current = await conn.fetchval("SELECT MAX(version) FROM app_schema")
             if current is not None and int(current) >= SCHEMA_VERSION:
                 logger.info(f"Schema already applied (version {current}). Skipping.")
                 return
-    logger.info('Applying schema.sql ...')
-    async with conn.transaction():
-        for stmt in statements:
-            await conn.execute(stmt)
-    logger.info('Schema applied successfully.')
+
+        logger.info("Applying schema.sql ...")
+        async with conn.transaction():
+            for stmt in statements:
+                await conn.execute(stmt)
+
+    logger.info("Schema applied successfully.")
 
 async def init_db() -> asyncpg.Pool:
     """
