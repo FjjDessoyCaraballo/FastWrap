@@ -1,45 +1,79 @@
-import aiosqlite
+import asyncio
 import logging
-import os
 from pathlib import Path
+import asyncpg
+from config import settings
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-DB_PATH = PROJECT_ROOT / "database/fastwrapper.db"
+SCHEMA_PATH = Path(__file__).with_name('schema.sql')
+SCHEMA_VERSION = 1
 
-clients_table = """
-CREATE TABLE IF NOT EXISTS clients (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    api_key TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    delete_at TEXT,
-    is_active BOOLEAN DEFAULT 1,
-    subscription TEXT DEFAULT 'free',
-    store_name TEXT,
-    phone TEXT
-)
-"""
+_pool: asyncpg.Pool | None = None
 
-characters_table = """
-CREATE TABLE IF NOT EXISTS characters (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    store_id INTEGER REFERENCES clients(id),
-    uuid TEXT UNIQUE NOT NULL,
-    agent_role TEXT NOT NULL,
-    TTL INTEGER
-)
-"""
+def _split_sql_statements(sql: str) -> list[str]:
+    """
+    Very simple splitter for a schema file (no functions/procs with $$ blocks).
+    Good enough for your current schema.sql.
+    """
+    lines = []
+    for line in sql.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith('--'):
+            continue
+        lines.append(line)
+    cleaned = '\n'.join(lines)
 
-async def db_creation() -> None:
-    try:
-        logger.info(f"Creating database {DB_PATH}...")
-        async with aiosqlite.connect(DB_PATH) as conn:
-            await conn.execute(clients_table)
-            await conn.execute(characters_table)
-            await conn.commit()
-        logger.info("Tables and database successfully created/updated")
-    except Exception as e:
-        logger.error(f"Database error: {e}")
+    statements = []
+    for stmt in cleaned.split(';'):
+        stmt = stmt.strip()
+        if stmt:
+            statements.append(stmt + ';')
+    return statements
+
+async def _create_pool_with_retry(dsn: str, attempts: int = 30, delay_s: float = 1.0) -> asyncpg.Pool:
+    last_err: Exception | None = None
+    for i in range(attempts):
+        try:
+            return await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=10)
+        except Exception as e:
+            last_err = e
+            logger.warning(f"Postgres not ready yet ({i+1}/{attempts}): {e}")
+            await asyncio.sleep(delay_s)
+    raise RuntimeError(f"Could not connect to Postgres after {attempts} attempts: {last_err}")
+
+async def _ensure_schema(pool: asyncpg.Pool) -> None:
+    sql_text = SCHEMA_PATH.read_text(encoding='utf-8')
+    statements = _split_sql_statements(sql_text)
+    async with pool.acquire() as conn:
+        reg = await conn.fetchval("SELECT to_regclass('public.app_schema')")
+        if reg is not None:
+            current = await conn.fetchval('SELECT MAX(version) FROM app_schema')
+            if current is not None and int(current) >= SCHEMA_VERSION:
+                logger.info(f"Schema already applied (version {current}). Skipping.")
+                return
+    logger.info('Applying schema.sql ...')
+    async with conn.transaction():
+        for stmt in statements:
+            await conn.execute(stmt)
+    logger.info('Schema applied successfully.')
+
+async def init_db() -> asyncpg.Pool:
+    """
+    Called once at startup.
+    Creates a pool and applies schema.sql once (via app_schema marker).
+    """
+    global _pool
+    if _pool is not None:
+        return _pool
+    if not getattr(settings, 'DATABASE_URL', None):
+        raise RuntimeError('DATABASE_URL is missing. Set it in .env/docker-compose')
+    _pool = await _create_pool_with_retry(settings.DATABASE_URL)
+    await _ensure_schema(_pool)
+    return _pool
+
+async def close_db() -> None:
+    global _pool
+    if _pool is not None:
+        await _pool.close()
+        _pool = None

@@ -13,8 +13,10 @@ services:
       # - REDIS_HOST=redis # FOR PROD RELEASE
       - REDIS_PORT=${REDIS_PORT}
       # - REDIS_PORT=6379
+      - DATABASE_URL=${DATABASE_URL}
     depends_on:
       - redis
+      - postgres
     volumes:
       - .:/app
 
@@ -31,5 +33,17 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
 
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PW}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
 volumes:
   redis_data:
+  pg_data:
