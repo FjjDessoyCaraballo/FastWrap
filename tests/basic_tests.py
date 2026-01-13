@@ -38,6 +38,17 @@ def test_signup_success():
             "password": test_user.password
         }
     )
-    test_user.api_key = response.json()["data"]["api_key"]
-    assert response.status_code == 201
-    assert "api_key" in response.json()["data"]
+
+    # Add debug info if request fails
+    if response.status_code != 201:
+        print(f"Response status: {response.status_code}")
+        print(f"Response body: {response.json()}")
+
+    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
+
+    response_data = response.json()
+    assert "data" in response_data, f"'data' key missing in response: {response_data}"
+    assert "api_key" in response_data["data"], f"'api_key' missing in data: {response_data}"
+
+    test_user.api_key = response_data["data"]["api_key"]
+    assert test_user.api_key is not None
