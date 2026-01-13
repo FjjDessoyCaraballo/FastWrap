@@ -32,7 +32,7 @@ class crud_management:
             if row is None:
                 logger.warning('Failed to create client resource')
                 return None
-            return tuple(row)
+            return dict(row)
         except UniqueViolationError:
             # Our partial unique index on (email) WHERE deleted_at IS NULL triggers this.
             logger.warning(f"Email already exists (active client): {email}")
@@ -177,7 +177,7 @@ class crud_management:
                 logger.warning("Update client failed (not found or deleted)")
                 return None
 
-            return tuple(row)
+            return dict(row)
 
         except UniqueViolationError:
             logger.warning(f"Email already exists (active client): {email}")

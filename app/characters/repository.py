@@ -28,7 +28,7 @@ class crud_management():
             if row is None:
                 logger.warning('Character could not be created.')
                 return None
-            return tuple(row)
+            return dict(row)
         except (ValueError, TypeError):
             logger.error('Invalid ID')
             return None
@@ -162,7 +162,7 @@ class crud_management():
             if not rows:
                 logger.warning('No characters found for client')
                 return None
-            return [tuple(r) for r in rows]
+            return [dict(r) for r in rows]
         except (ValueError, TypeError):
             logger.error('Invalid ID')
             return None
