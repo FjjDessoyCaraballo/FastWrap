@@ -52,3 +52,25 @@ def test_signup_success():
 
     test_user.api_key = response_data["data"]["api_key"]
     assert test_user.api_key is not None
+
+def test_client_patch_password():
+    test_user.email = test_user.generate_random_email()
+
+    response = client.patch(
+        "/api/clients/me",
+        json={
+            "email": test_user.email,
+            "api_key": test_user.api_key
+        }
+    )
+
+def test_client_patch_password():
+    test_user.password = test_user.generate_random_password()
+
+    response = client.patch(
+        "/api/clients/me",
+        json={
+            "password": test_user.password,
+            "api_key": test_user.api_key
+        }
+    )
