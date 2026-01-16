@@ -64,6 +64,8 @@ def test_client_patch_password():
         }
     )
 
+    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
+
 def test_client_patch_password():
     test_user.password = test_user.generate_random_password()
 
@@ -74,3 +76,5 @@ def test_client_patch_password():
             "api_key": test_user.api_key
         }
     )
+    
+    assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
