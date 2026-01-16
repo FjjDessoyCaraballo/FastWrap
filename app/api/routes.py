@@ -274,24 +274,25 @@ async def signup(request: schemas.AuthRequest):
         "data": resource
         }
 
-@router.get("/api/clients/me", status_code=status.HTTP_200_OK)
-async def get_clients(user = Depends(verify_api_key)):
-    """
+# DEPRECATED
+# @router.get("/api/clients/me", status_code=status.HTTP_200_OK)
+# async def get_clients(user = Depends(verify_api_key)):
+#     """
     
-    Parameters:
-    -----------
-    user : dict
-        Object that resulting from middleware verification of API key. If the API key is
-        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
-        Update, and Delete) operations.
-    """
+#     Parameters:
+#     -----------
+#     user : dict
+#         Object that resulting from middleware verification of API key. If the API key is
+#         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+#         Update, and Delete) operations.
+#     """
 
-    logger.info(f"Received role fetch request")
+#     logger.info(f"Received role fetch request")
     
-    return {
-        "message": "Character fetched",
-        "data": user
-        }
+#     return {
+#         "message": "Character fetched",
+#         "data": user
+#         }
 
 @router.patch("/clients/me", status_code=status.HTTP_201_CREATED)
 async def update_clients(
