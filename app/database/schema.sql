@@ -1,5 +1,6 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Minimal 'version marker' so startup knows whether schema is already applied
 CREATE TABLE IF NOT EXISTS app_schema (
@@ -34,6 +35,24 @@ CREATE TABLE IF NOT EXISTS characters (
 
 CREATE INDEX IF NOT EXISTS idx_characters_client_id ON characters (client_id);
 
+CREATE TABLE IF NOT EXISTS embeddings (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id   UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    entity_type TEXT NOT NULL,
+    entity_id   UUID NOT NULL,
+    content     TEXT NOT NULL,
+    embedding   vector(3072) NOT NULL,
+    metadata    JSONB,
+    created_at  TIMESTAMPZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPZ NOT NULL DEFAULT now(),
+    deleted_at  TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_embbedings_embbeding_hnsw
+    ON embeddings
+    USING hnsw (embbeding vector_cosine_ops)
+    WHERE deleted_at IS NULL
+
 INSERT INTO app_schema(version)
-VALUES (1)
+VALUES (2)
 ON CONFLICT (version) DO NOTHING;
