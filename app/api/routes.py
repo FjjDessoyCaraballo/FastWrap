@@ -8,6 +8,7 @@ from typing import Any
 from uuid import UUID
 import logging
 import sys
+from ..vectors import service as vector_service
  
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -351,3 +352,18 @@ async def delete_clients(user = Depends(verify_api_key)):
         logger.error("Could not delete clients account")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     
+@router.post("/api/vectors/upsert", status_code=status.HTTP_201_CREATED)
+async def vectors_upsert(request: schemas.VectorUpsertRequest, user = Depends(verify_api_key)):
+    store_id = str([user[0]])
+    row = await vector_service.upsert_text_snippet(client_id=store_id, entity_type=request.entity_type,
+                        entity_id=request.entity_id, content=request.content,metadata=request.metadata)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, details='Failed to upsert vector')
+    return {"message": "Vector upserted", "data": row}
+
+@router.post("/api/vectors/search", status_code=status.HTTP_200_OK)
+async def vectors_search(request: schemas.VectorSearchRequest, user = Depends(verify_api_key)):
+    store_id = str(user[0])
+    rows = await vector_service.semantic_search(client_id=store_id, query=request.query,
+                                    top_k=request.top_k, entity_type=request.entity_type)
+    return {"message": "Search results", "data": rows}
