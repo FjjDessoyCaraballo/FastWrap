@@ -1,11 +1,15 @@
 import pytest
+import asyncio
+import pytest_asyncio
 import random
 import string
-from fastapi.testclient import TestClient
+# from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
 from main import app
 import logging
 
-client = TestClient(app)
+# client = TestClient(app)
+
 
 class MockUser():
     def __init__(self):
@@ -28,17 +32,16 @@ class MockUser():
 
         return random_password
 
-
-@pytest.fixture(scope="module")
-def authenticated_user():
+@pytest_asyncio.fixture(loop_scope="module")
+async def authenticated_user():
     test_user = MockUser()
-    response = client.post(
-        "/auth/signup",
-        json={
-            "email": test_user.email,
-            "password": test_user.password
-        }
-    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post("/auth/signup",
+            json={
+                "email": test_user.email, 
+                "password": test_user.password
+                }
+            )
 
     if response.status_code != 201:
         print(test_user.email)
@@ -53,15 +56,14 @@ def authenticated_user():
     test_user.api_key = response_data["data"]["api_key"]
     return test_user
 
-def test_signup_success():
+@pytest.mark.asyncio(loop_scope="module")
+async def test_signup_success():
     temp_user = MockUser()
-    response = client.post(
-        "/auth/signup",
-        json={
-            "email": temp_user.generate_random_email(),
-            "password": temp_user.generate_random_password()
-        }
-    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post("/auth/signup", json={
+            "email": temp_user.generate_random_email(), 
+            "password": temp_user.generate_random_password() 
+            })
 
     # Add debug info if request fails
     if response.status_code != 201:
@@ -74,26 +76,29 @@ def test_signup_success():
     assert "data" in response_data, f"'data' key missing in response: {response_data}"
     assert "api_key" in response_data["data"], f"'api_key' missing in data: {response_data}"
 
-def test_client_patch_email(authenticated_user):
+@pytest.mark.asyncio(loop_scope="module")
+async def test_client_patch_email(authenticated_user):
     authenticated_user.email = authenticated_user.generate_random_email()
 
-    response = client.patch(
-        "/clients/me",
-        headers={ "x-api-key": authenticated_user.api_key },
-        json={ "email": authenticated_user.email }
-    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.patch(
+            "/clients/me",
+            headers={ "x-api-key": authenticated_user.api_key },
+            json={ "email": authenticated_user.email }
+        )
 
     assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
 
-
-def test_client_patch_password(authenticated_user):
+@pytest.mark.asyncio(loop_scope="module")
+async def test_client_patch_password(authenticated_user):
     authenticated_user.password = authenticated_user.generate_random_password()
 
-    response = client.patch(
-        "/clients/me",
-        headers={ "x-api-key": authenticated_user.api_key },
-        json={ "password": authenticated_user.password }
-    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.patch(
+            "/clients/me",
+            headers={ "x-api-key": authenticated_user.api_key },
+            json={ "password": authenticated_user.password }
+        )
     
     assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
 
