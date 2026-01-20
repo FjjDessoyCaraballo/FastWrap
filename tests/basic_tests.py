@@ -43,9 +43,6 @@ async def authenticated_user():
                 }
             )
 
-    if response.status_code != 201:
-        print(test_user.email)
-        print(test_user.password)
     assert response.status_code == 201, f"Signup failed: {response.status_code}"
 
     response_data = response.json()
@@ -64,11 +61,6 @@ async def test_signup_success():
             "email": temp_user.generate_random_email(), 
             "password": temp_user.generate_random_password() 
             })
-
-    # Add debug info if request fails
-    if response.status_code != 201:
-        print(f"Response status: {response.status_code}")
-        print(f"Response body: {response.json()}")
 
     assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
 
