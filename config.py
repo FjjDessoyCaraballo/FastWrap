@@ -23,5 +23,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PW: str
     DATABASE_URL: str
+    EMBEDDING_MODEL: str = 'text-embedding-3-large'
+    EMBEDDING_DIM: int = 3072
 
 settings = Settings()
