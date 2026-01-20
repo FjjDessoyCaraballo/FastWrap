@@ -110,7 +110,7 @@ class crud_management:
         """
         logger.info("Deleting client account")
         try:
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
 
             pool = await init_db()
             async with pool.acquire() as conn:
@@ -198,7 +198,7 @@ class crud_management:
         Generates and stores a new api_key, returns it.
         """
         try:
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             new_key: str = f"fn_{secrets.token_urlsafe(32)}"
             pool = await init_db()
             async with pool.acquire() as conn:

@@ -14,7 +14,7 @@ class crud_management():
         """
         logger.info('Inserting new character')
         try:
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             pool = await init_db()
             async with pool.acquire() as conn:
                 row = await conn.fetchrow(
@@ -46,7 +46,8 @@ class crud_management():
         logger.info('Updating character')
         try:
             character_id = uuid.UUID(uuid_str)
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
+
             pool = await init_db()
             async with pool.acquire() as conn:
                 row = await conn.fetchrow(
@@ -82,7 +83,7 @@ class crud_management():
         logger.info('Deleting character')
         try:
             character_id = uuid.UUID(uuid_str)
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             pool = await init_db()
             async with pool.acquire() as conn:
                 deleted = await conn.fetchval(
@@ -116,7 +117,7 @@ class crud_management():
         logger.info('Fetching character role information')
         try:
             character_id = uuid.UUID(uuid_str)
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             pool = await init_db()
             async with pool.acquire() as conn:
                 role = await conn.fetchval(
@@ -147,7 +148,7 @@ class crud_management():
         Returns list[tuple] like your old sqlite fetchall().
         """
         try:
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             pool = await init_db()
             async with pool.acquire() as conn:
                 rows = await conn.fetch(
