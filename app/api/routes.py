@@ -6,11 +6,11 @@ from ..characters import service as character_service
 from ..auth.dependencies import verify_api_key
 from typing import Any
 from uuid import UUID
-import logging
 import sys
+import logging
  
-router = APIRouter()
 logger = logging.getLogger(__name__)
+router = APIRouter()
   
 @router.get("/", status_code=status.HTTP_200_OK) 
 async def root(): 
@@ -306,6 +306,7 @@ async def update_clients(
     resource, http_status = await client_service.update_client(store_id, request)
 
     if resource is None:
+        logger.error("No match for credentials provided in database")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
         detail="No maching credentials")
     elif http_status == 422:

@@ -1,7 +1,9 @@
 from ..models import schemas
 from .repository import crud_management
 from fastapi import HTTPException
-
+import logging
+ 
+logger = logging.getLogger(__name__)
 crud = crud_management()
 
 async def register_client(request: schemas.AuthRequest) -> dict:
@@ -20,8 +22,10 @@ async def update_client(store_id: str, request: schemas.UpdateRequest) -> dict:
     """
     """
     if request.email is None and request.password is None:
+        logger.error("Password and email cannot be both empty")
         return None, 404
     elif request.email is not None and request.password is not None:
+        logger.error("Can only change email or password, not both at the same time")
         return None, 422
 
     resource = await crud.db_update_client(store_id, request.email, request.password)
