@@ -145,7 +145,8 @@ class crud_management:
         """
         logger.info('Updating client account')
         try:
-            id = uuid.UUID(client_id)
+            # id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             pool = await init_db()
             async with pool.acquire() as conn:
                 if password is None and email is not None:
