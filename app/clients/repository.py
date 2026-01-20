@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 class crud_management:
     async def db_insert_client(self, email: str, password: str):
         """
-        Inserts a new client (active) and returns a tuple-like row (keeps your existing calling style).
+        Inserts a new client (active) and returns a dict-like row (keeps your existing calling style).
         """
         try:
             hashed_pw: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")
@@ -79,7 +79,7 @@ class crud_management:
     
     async def db_select_client_by_key(self, api_key: str):
         """
-        Used by verify_api_key dependency. Returns (id, email, api_key) tuple.
+        Used by verify_api_key dependency. Returns (id, email, api_key) dict.
         """
         try:
             pool = await init_db()
@@ -141,7 +141,7 @@ class crud_management:
     async def db_update_client(self, client_id: str, email: str | None, password: str | None):
         """
         Updates either email or password (your service layer prevents both at once).
-        Returns updated row tuple or None.
+        Returns updated row dict or None.
         """
         logger.info('Updating client account')
         try:
