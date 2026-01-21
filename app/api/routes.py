@@ -331,7 +331,7 @@ async def update_client_key(user = Depends(verify_api_key)):
 
     return {
         "message": "New key generated",
-        "API key": new_key
+        "api_key": new_key
         }
 
 @router.delete("/clients/me", status_code=status.HTTP_204_NO_CONTENT)
@@ -345,9 +345,9 @@ async def delete_clients(user = Depends(verify_api_key)):
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
         Update, and Delete) operations.
     """
-    store_id = user[0]
+    client_id = user[0]
 
-    http_status: int = await client_service.delete_client(store_id)
+    http_status: int = await client_service.delete_client(client_id)
     
     if http_status is None:
         logger.error("Could not delete clients account")
