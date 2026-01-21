@@ -41,18 +41,17 @@ CREATE TABLE IF NOT EXISTS embeddings (
     entity_type TEXT NOT NULL,
     entity_id   UUID NOT NULL,
     content     TEXT NOT NULL,
-    embedding   vector(3072) NOT NULL,
+    embedding   vector(1536) NOT NULL,
     metadata    JSONB,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at  TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_embbedings_embbeding_hnsw
+CREATE INDEX IF NOT EXISTS idx_embeddings_embedding_hnsw
     ON embeddings
-    USING hnsw (embbeding vector_cosine_ops)
-    WHERE deleted_at IS NULL
+    USING hnsw (embedding vector_cosine_ops)
+    WHERE deleted_at IS NULL;
 
-INSERT INTO app_schema(version)
-VALUES (2)
+INSERT INTO app_schema(version) VALUES (2)
 ON CONFLICT (version) DO NOTHING;
