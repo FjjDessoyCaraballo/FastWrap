@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS embeddings (
     content     TEXT NOT NULL,
     embedding   vector(3072) NOT NULL,
     metadata    JSONB,
-    created_at  TIMESTAMPZ NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPZ NOT NULL DEFAULT now(),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     deleted_at  TIMESTAMPTZ
 );
 
