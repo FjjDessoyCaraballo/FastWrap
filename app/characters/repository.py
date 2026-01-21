@@ -1,172 +1,173 @@
-import aiosqlite
+import asyncpg
 import logging
-from pathlib import Path
+import uuid
 from ..models import schemas
 from fastapi import status
-import uuid
+from ..database.init import init_db
 
 logger = logging.getLogger(__name__)
-PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 class crud_management():
-    def __init__(self):
-        self.DB_PATH = PROJECT_ROOT / "database/fastwrapper.db"
-
-    async def db_insertion_character(self, request: schemas.ServiceRole, store_id: str) -> dict | None:
-        logger.info(f"Inserting new character")
+    async def db_insertion_character(self, request: schemas.ServiceRole, client_id: str):
+        """
+        Inserts into characters(client_id, agent_role, ttl). Returns full row tuple.
+        """
+        logger.info('Inserting new character')
         try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-                uid = str(uuid.uuid4())
-                if request.TTL is None:
-                    cursor = await conn.execute("""
-                    INSERT INTO characters ( uuid, store_id, agent_role )
-                    VALUES ( ? , ? , ? )
-                    RETURNING *
-                    """, (uid, store_id, request.agent_role))
-                else:
-                    cursor = await conn.execute("""
-                    INSERT INTO characters ( uuid, store_id, agent_role, TTL )
-                    VALUES ( ? , ? , ? , ? )
-                    RETURNING *
-                    """, (uid, store_id, request.agent_role, request.TTL))
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO characters (client_id, agent_role, ttl)
+                    VALUES ($1, $2, $3)
+                    RETURNING id, client_id, agent_role, ttl, deleted_at
+                    """,
+                    id, request.agent_role, request.TTL
+                )
+            if row is None:
+                logger.warning('Character could not be created.')
+                return None
+            return dict(row)
+        except (ValueError, TypeError):
+            logger.error('Invalid ID')
+            return None
+        except asyncpg.PostgresError as e:
+            logger.error(f"Database error: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            return None
+    
+    async def db_update_character(self, uuid_str: str, request: schemas.ServiceRole, client_id: str):
+        """
+        Updates characters by (id, client_id) if not soft-deleted. Returns updated row tuple.
+        """
+        logger.info('Updating character')
+        try:
+            character_id = uuid.UUID(uuid_str)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
 
-                row = await cursor.fetchone()
-
-                if row is None:
-                    logger.warning("Resource could not be created.")
-                    return None
-
-                await conn.commit()
-
-                logger.info("Successfully created ID with new role")
-
-                return row
-
-        except aiosqlite.DatabaseError as e:
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    UPDATE characters
+                    SET agent_role = $1
+                        ttl = $2
+                    WHERE id = $3
+                        AND client_id = $4
+                        AND deleted_at IS NULL
+                    RETURNING id, client_id, agent_role, ttl, deleted_at
+                    """,
+                    request.agent_role, request.TTL,
+                    character_id, id
+                )
+            if row is None:
+                logger.warning('Update character failed (not found/deleted)')
+                return None
+        except (ValueError, TypeError):
+            logger.error("Invalid UUID for character id or store_id")
+            return None
+        except asyncpg.PostgresError as e:
             logger.error(f"Database error: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return None
 
-    async def db_update_character(self, uuid: str, request: schemas.ServiceRole, store_id: str) -> dict | None:
-        logger.info("Updating new role")
+    async def df_delete_character(self, uuid_str: str, client_id: str):
+        """
+        Soft delete characters row. Returns HTTP status code.
+        """
+        logger.info('Deleting character')
         try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-
-                if request.TTL is None:
-                    cursor = await conn.execute('''
-                    UPDATE OR ABORT characters
-                    SET agent_role = ?
-                    WHERE uuid = ? AND store_id = ?
-                    RETURNING *
-                    ''',
-                    (request.agent_role, uuid, store_id))
-                else:
-                    cursor = await conn.execute('''
-                    UPDATE OR ABORT characters
-                    SET agent_role = ?, TTL = ?
-                    WHERE uuid = ? AND store_id = ?
-                    RETURNING *
-                    ''',
-                    (request.agent_role, request.TTL, uuid, store_id))
-
-                row = await cursor.fetchone()
-
-                if row is None:
-                    logger.warning("Update character failed")
-                    return None
-
-                await conn.commit()
-
-                logger.info("Successfully update ID with new role")
-
-                return row
-
-        except aiosqlite.DatabaseError as e:
+            character_id = uuid.UUID(uuid_str)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                deleted = await conn.fetchval(
+                    """
+                    UPDATE characters
+                    SET deleted_at = now()
+                    WHERE id = $1
+                        AND client_id = $2
+                        AND deleted_at IS NULL
+                    RETURNING id
+                    """, character_id, id
+                )
+            if deleted is None:
+                logger.warning('Character not deleted')
+                return status.HTTP_404_NOT_FOUND
+            return status.HTTP_204_NO_CONTENT
+        except (ValueError, TypeError):
+            logger.error('Invalid ID')
+            return None
+        except asyncpg.PostgresError as e:
             logger.error(f"Database error: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return None
 
-    async def db_delete_character(self, uuid: str, store_id: str) -> dict | None:
-        logger.info(f"Deleting role for ID")
+    async def db_select_character(self, uuid_str: str, client_id: str):
+        """
+        Returns (agent_role,) tuple to keep your existing downstream code working.
+        """
+        logger.info('Fetching character role information')
         try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-
-                cursor = await conn.execute('''
-                DELETE FROM characters
-                WHERE uuid = ? AND store_id = ?
-                ''',
-                (uuid, store_id))
-
-                if cursor.rowcount == 0:
-                    logger.warning("Resource not deleted because it does not exist.")
-                    http_status = status.HTTP_404_NOT_FOUND
-                else:
-                    logger.info(f"Successfully deleted ID {uuid}")
-                    http_status = status.HTTP_204_NO_CONTENT
-
-                await conn.commit()
-
-                return http_status
-
-        except aiosqlite.DatabaseError as e:
+            character_id = uuid.UUID(uuid_str)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                role = await conn.fetchval(
+                    """
+                    SELECT agent_role
+                    FROM characters
+                    WHERE id = $1
+                        AND client_id = $2
+                        AND deleted_at IS NULL
+                    """, character_id, id
+                )
+            if role is None:
+                logger.warning('Character not found')
+                return None
+            return (role)
+        except (ValueError, TypeError):
+            logger.error('Invalid ID')
+            return None
+        except asyncpg.PostgresError as e:
             logger.error(f"Database error: {e}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return None
-
-    async def db_select_character(self, uuid: str, store_id: str) -> dict | None:
-        logger.info(f"Fetching role information")
+    
+    async def db_select_character_all(self, client_id: str):
+        """
+        Returns list[tuple] like your old sqlite fetchall().
+        """
         try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-
-                cursor = await conn.execute('''
-                SELECT agent_role
-                FROM characters
-                WHERE uuid = ? AND store_id = ?
-                ''', (uuid, store_id))
-                row = await cursor.fetchone()
-
-                if row is None:
-                    logger.warning("uuid does not correspond to any existing IDs in database")
-                    return None
-
-                logger.info(f"Successfully fetched data")
-
-                return row
-
-        except aiosqlite.DatabaseError as e:
-            logger.error(f"Database error: {e}")
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
+            pool = await init_db()
+            async with pool.acquire() as conn:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, client_id, agent_role, ttl, deleted_at
+                    FROM characters
+                    WHERE client_id = $1
+                        AND deleted_at IS NULL
+                    ORDER BY id
+                    """, id
+                )
+            if not rows:
+                logger.warning('No characters found for client')
+                return None
+            return [dict(r) for r in rows]
+        except (ValueError, TypeError):
+            logger.error('Invalid ID')
             return None
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            return None
-
-    async def db_select_character_all(self, store_id: str) -> tuple[list[tuple] | None]:
-        try:
-            async with aiosqlite.connect(self.DB_PATH) as conn:
-
-                cursor = await conn.execute('''
-                SELECT *
-                FROM characters
-                WHERE store_id = ?
-                ''', (store_id,))
-
-                rows = await cursor.fetchall()
-
-                if rows is None:
-                    logger.warning("Database is empty")
-                    return None
-
-                logger.info("retrieving all characters information")
-
-                return rows
-
-        except aiosqlite.DatabaseError as e:
+        except asyncpg.PostgresError as e:
             logger.error(f"Database error: {e}")
             return None
         except Exception as e:

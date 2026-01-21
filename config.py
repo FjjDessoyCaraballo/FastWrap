@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+from pydantic import ConfigDict
 
 class Settings(BaseSettings):
     FASTWRAP_API_KEY: str
@@ -15,7 +16,12 @@ class Settings(BaseSettings):
     MODEL_PROVIDER: str | None = None
     LANGCHAIN_API_KEY: str | None = None
     LANGSMITH_TRACING_V2: bool = True
-    class Config:
-        env_file = ".env"
+    model_config = ConfigDict(env_file=".env")
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int = 5432
+    POSTGRES_DB: str
+    POSTGRES_USER: str
+    POSTGRES_PW: str
+    DATABASE_URL: str
 
 settings = Settings()
