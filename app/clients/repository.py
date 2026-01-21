@@ -79,7 +79,7 @@ class crud_management:
     
     async def db_select_client_by_key(self, api_key: str):
         """
-        Used by verify_api_key dependency. Returns (id, email, api_key) dict.
+        Used by verify_api_key dependency. Returns (id, email, api_key) tuple.
         """
         try:
             pool = await init_db()
@@ -110,7 +110,7 @@ class crud_management:
         """
         logger.info("Deleting client account")
         try:
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
 
             pool = await init_db()
             async with pool.acquire() as conn:
@@ -138,14 +138,14 @@ class crud_management:
             logger.error(f"Unexpected error: {e}")
             return None
     
-    async def db_update_client(self, client_id: str, email: str | None, password: str | None):
+    async def db_update_client(self, client_id: str, email: str | None, password: str | None) -> dict | None:
         """
         Updates either email or password (your service layer prevents both at once).
-        Returns updated row dict or None.
+        Returns updated row tuple or None.
         """
         logger.info('Updating client account')
         try:
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             pool = await init_db()
             async with pool.acquire() as conn:
                 if password is None and email is not None:
@@ -192,12 +192,12 @@ class crud_management:
             logger.error(f"Unexpected error: {e}")
             return None
     
-    async def db_regenerate_key(self, client_id: str) -> str | None:
+    async def db_regenerate_key(self, client_id: str) -> dict | None:
         """
         Generates and stores a new api_key, returns it.
         """
         try:
-            id = uuid.UUID(client_id)
+            id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             new_key: str = f"fn_{secrets.token_urlsafe(32)}"
             pool = await init_db()
             async with pool.acquire() as conn:
