@@ -94,4 +94,34 @@ async def test_client_patch_password(authenticated_user):
     
     assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
 
+@pytest.mark.asyncio(loop_scope="module")
+async def test_client_regenerate_key(authenticated_user):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post(
+            "/clients/me/regenerate-key",
+            headers={ "x-api-key": authenticated_user.api_key }
+        )
+
+    response_data = response.json()
+    print(response_data)
+    assert response_data["api_key"] != authenticated_user.api_key
+    assert response.status_code == 201, f"Expected 201, got {response.status_code}"
+
+@pytest.mark.asyncio(loop_scope="module")
+async def test_client_delete(authenticated_user):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.delete(
+            "/clients/me",
+            headers={ "x-api-key": authenticated_user.api_key }
+        )
     
+    assert response.status_code == 204, f"Expected 204, got {response.status_code}"
+
+    # Test to verify is client together with resources are all deleted
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        test_response = await ac.post(
+            "/clients/me/regenerate-key",
+            headers={ "x-api-key": authenticated_user.api_key }
+        )
+
+    assert test_response.status_code == 401, f"Expected 401, got {test_response.status_code}"
