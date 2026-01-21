@@ -3,13 +3,9 @@ import asyncio
 import pytest_asyncio
 import random
 import string
-# from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
 from main import app
 import logging
-
-# client = TestClient(app)
-
 
 class MockUser():
     def __init__(self):
@@ -48,7 +44,7 @@ async def authenticated_user():
     response_data = response.json()
 
     assert "data" in response_data, "Missing data field in response"
-    assert "api_key" in response_data["data"], "Missing API key field in response"
+    assert "api_key" in response_data["data"], "Missing api_key field in response"
 
     test_user.api_key = response_data["data"]["api_key"]
     return test_user
