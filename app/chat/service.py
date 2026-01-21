@@ -39,7 +39,7 @@ async def store_message(request: Completions, store_id: str):
         response: dict[str, Any]
         response = await chatbot.chat(parsed)
 
-        await r.expire(f"chat:{store_id}:{request.uuid}", 300)
+        await r.expire(f"chat:{store_id}:{request.uuid}", 1200)
         return response
 
     except HTTPException as e:
