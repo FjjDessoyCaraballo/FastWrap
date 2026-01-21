@@ -6,12 +6,12 @@ from ..characters import service as character_service
 from ..auth.dependencies import verify_api_key
 from typing import Any
 from uuid import UUID
-import logging
 import sys
 from ..vectors import service as vector_service
+import logging
  
-router = APIRouter()
 logger = logging.getLogger(__name__)
+router = APIRouter()
   
 @router.get("/", status_code=status.HTTP_200_OK) 
 async def root(): 
@@ -275,24 +275,25 @@ async def signup(request: schemas.AuthRequest):
         "data": resource
         }
 
-@router.get("/api/clients/me", status_code=status.HTTP_200_OK)
-async def get_clients(user = Depends(verify_api_key)):
-    """
+# DEPRECATED
+# @router.get("/api/clients/me", status_code=status.HTTP_200_OK)
+# async def get_clients(user = Depends(verify_api_key)):
+#     """
     
-    Parameters:
-    -----------
-    user : dict
-        Object that resulting from middleware verification of API key. If the API key is
-        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
-        Update, and Delete) operations.
-    """
+#     Parameters:
+#     -----------
+#     user : dict
+#         Object that resulting from middleware verification of API key. If the API key is
+#         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+#         Update, and Delete) operations.
+#     """
 
-    logger.info(f"Received role fetch request")
+#     logger.info(f"Received role fetch request")
     
-    return {
-        "message": "Character fetched",
-        "data": user
-        }
+#     return {
+#         "message": "Character fetched",
+#         "data": user
+#         }
 
 @router.patch("/clients/me", status_code=status.HTTP_201_CREATED)
 async def update_clients(
@@ -306,6 +307,7 @@ async def update_clients(
     resource, http_status = await client_service.update_client(store_id, request)
 
     if resource is None:
+        logger.error("No match for credentials provided in database")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
         detail="No maching credentials")
     elif http_status == 422:
@@ -330,7 +332,7 @@ async def update_client_key(user = Depends(verify_api_key)):
 
     return {
         "message": "New key generated",
-        "API key": new_key
+        "api_key": new_key
         }
 
 @router.delete("/clients/me", status_code=status.HTTP_204_NO_CONTENT)
@@ -344,9 +346,9 @@ async def delete_clients(user = Depends(verify_api_key)):
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
         Update, and Delete) operations.
     """
-    store_id = user[0]
+    client_id = user[0]
 
-    http_status: int = await client_service.delete_client(store_id)
+    http_status: int = await client_service.delete_client(client_id)
     
     if http_status is None:
         logger.error("Could not delete clients account")
