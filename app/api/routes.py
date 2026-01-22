@@ -38,7 +38,7 @@ async def create_characters(
 
     Parameters
     ----------
-    request : RoleRequest
+    request : ServiceRole
         Object defined and validated by pydantic class BaseModel in `/app/models/schemas.py`.
         Mandatorily, it requires an `uuid` and `agent_role`, with the optional setting of a TTL
         (Time To Live).
