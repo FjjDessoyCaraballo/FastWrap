@@ -5,7 +5,7 @@ import asyncio
 from main import app
 from .MockUser import MockUser
 
-@pytest_asyncio.fixture(loop_scope="module")
+@pytest_asyncio.fixture(scope="module", loop_scope="module")
 async def authenticated_user():
     test_user = MockUser()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
