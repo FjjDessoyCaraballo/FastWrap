@@ -6,7 +6,6 @@ from httpx import AsyncClient, ASGITransport
 from main import app
 from .MockUser import MockUser
 
-
 @pytest.mark.asyncio(loop_scope="module")
 async def test_signup_success():
     temp_user = MockUser()
