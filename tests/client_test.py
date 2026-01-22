@@ -10,9 +10,11 @@ from .MockUser import MockUser
 async def test_signup_success():
     temp_user = MockUser()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        response = await ac.post("/auth/signup", json={
-            "email": temp_user.generate_random_email(), 
-            "password": temp_user.generate_random_password() 
+        response = await ac.post(
+            "/auth/signup", 
+            json={
+                "email": temp_user.generate_random_email(), 
+                "password": temp_user.generate_random_password() 
             })
 
     assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
