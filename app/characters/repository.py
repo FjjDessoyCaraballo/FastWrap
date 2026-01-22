@@ -41,7 +41,7 @@ class crud_management():
     
     async def db_update_character(self, uuid_str: str, request: schemas.ServiceRole, client_id: str):
         """
-        Updates characters by (id, client_id) if not soft-deleted. Returns updated row tuple.
+        Updates characters by (id, client_id) if not soft-deleted. Returns updated row dict.
         """
         logger.info('Updating character')
         try:
@@ -112,7 +112,7 @@ class crud_management():
 
     async def db_select_character(self, uuid_str: str, client_id: str):
         """
-        Returns (agent_role,) tuple to keep your existing downstream code working.
+        Returns (agent_role,) dict to keep your existing downstream code working.
         """
         logger.info('Fetching character role information')
         try:
