@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 class crud_management:
     async def db_insert_client(self, email: str, password: str):
         """
-        Inserts a new client (active) and returns a tuple-like row (keeps your existing calling style).
+        Inserts a new client (active) and returns a dict-like row (keeps your existing calling style).
         """
         try:
             hashed_pw: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")

@@ -2,14 +2,19 @@ import asyncio
 import logging
 from pathlib import Path
 import asyncpg
+from pgvector.asyncpg import register_vector
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 SCHEMA_PATH = Path(__file__).with_name('schema.sql')
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _pool: asyncpg.Pool | None = None
+
+async def _init_conn(conn: asyncpg.Connection) -> None:
+    await conn.execute('CREATE EXTENSION IF NOT EXISTS vector;')
+    await register_vector(conn)
 
 def _split_sql_statements(sql: str) -> list[str]:
     """
@@ -35,7 +40,7 @@ async def _create_pool_with_retry(dsn: str, attempts: int = 30, delay_s: float =
     last_err: Exception | None = None
     for i in range(attempts):
         try:
-            return await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=10)
+            return await asyncpg.create_pool(dsn=dsn, min_size=1, max_size=10, init=_init_conn)
         except Exception as e:
             last_err = e
             logger.warning(f"Postgres not ready yet ({i+1}/{attempts}): {e}")

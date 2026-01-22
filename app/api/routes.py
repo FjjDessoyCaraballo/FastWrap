@@ -7,6 +7,7 @@ from ..auth.dependencies import verify_api_key
 from typing import Any
 from uuid import UUID
 import sys
+from ..vectors import service as vector_service
 import logging
  
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ async def create_characters(
 
     Parameters
     ----------
-    request : RoleRequest
+    request : ServiceRole
         Object defined and validated by pydantic class BaseModel in `/app/models/schemas.py`.
         Mandatorily, it requires an `uuid` and `agent_role`, with the optional setting of a TTL
         (Time To Live).
@@ -274,26 +275,6 @@ async def signup(request: schemas.AuthRequest):
         "data": resource
         }
 
-# DEPRECATED
-# @router.get("/api/clients/me", status_code=status.HTTP_200_OK)
-# async def get_clients(user = Depends(verify_api_key)):
-#     """
-    
-#     Parameters:
-#     -----------
-#     user : dict
-#         Object that resulting from middleware verification of API key. If the API key is
-#         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
-#         Update, and Delete) operations.
-#     """
-
-#     logger.info(f"Received role fetch request")
-    
-#     return {
-#         "message": "Character fetched",
-#         "data": user
-#         }
-
 @router.patch("/clients/me", status_code=status.HTTP_201_CREATED)
 async def update_clients(
     request: schemas.UpdateRequest,
@@ -353,3 +334,25 @@ async def delete_clients(user = Depends(verify_api_key)):
         logger.error("Could not delete clients account")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     
+@router.post("/api/vectors/upsert", status_code=status.HTTP_201_CREATED)
+async def vectors_upsert(request: schemas.VectorUpsertRequest, user = Depends(verify_api_key)):
+    store_id = str([user[0]])
+    row = await vector_service.upsert_text_snippet(client_id=store_id, entity_type=request.entity_type,
+                        entity_id=request.entity_id, content=request.content,metadata=request.metadata)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, details='Failed to upsert vector')
+
+    return {
+        "message": "Vector upserted",
+        "data": row
+        }
+
+@router.post("/api/vectors/search", status_code=status.HTTP_200_OK)
+async def vectors_search(request: schemas.VectorSearchRequest, user = Depends(verify_api_key)):
+    store_id = str(user[0])
+    rows = await vector_service.semantic_search(client_id=store_id, query=request.query,
+                                    top_k=request.top_k, entity_type=request.entity_type)
+    return {
+        "message": "Search results",
+        "data": rows
+        }

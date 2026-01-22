@@ -63,3 +63,14 @@ class UpdateRequest(BaseModel):
             raise ValueError('Cannot use space, tabs, or any other whitespace characters')
         
         return v
+
+class VectorUpsertRequest(BaseModel):
+    entity_type: str = Field(..., min_length=1, description="Namespace for the snippet (e.g. memory, character)")
+    entity_id: str = Field(..., min_length=36, description="UUID that identifies the entity this snippet belongs to")
+    content: str = Field(..., min_length=1, description="Text content to embed and store")
+    metadata: Optional[dict] = Field(None, description="Optional JSON metadata")
+
+class VectorSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, description="Search query text")
+    top_k: int = Field(5, ge=1, le=50, description="Number of results to return")
+    entity_type: Optional[str] = Field(None, description="Optional filter by entity_type")
