@@ -312,7 +312,7 @@ async def update_client_key(user = Depends(verify_api_key)):
 
     return {
         "message": "New key generated",
-        "api_key": new_key
+        # "api_key": new_key
         }
 
 @router.delete("/clients/me", status_code=status.HTTP_204_NO_CONTENT)
