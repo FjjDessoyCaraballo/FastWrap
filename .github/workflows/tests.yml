@@ -23,6 +23,9 @@ jobs:
           echo "REDIS_PORT=6379" >> .env
           echo "PORT=8555" >> .env
           echo "HOST=0.0.0.0" >> .env
+          echo "FASTWRAP_API_KEY=1234" >> .env
+          echo "MODEL=gpt-4o-mini" >> .env
+          echo "MODEL_KEY=sk-fake-test-key" >> .env
           
       - name: Build and start services
         run: docker compose up -d --build
