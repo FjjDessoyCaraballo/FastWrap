@@ -9,48 +9,30 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_DB: fastwrap_test_db
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Add uv to PATH
-        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install dependencies
-        run: uv sync
+      
+      - name: Create .env file
+        run: |
+          echo "DATABASE_URL=postgresql://test_user:test_password@postgres:5432/fastwrap_test_db" > .env
+          echo "POSTGRES_USER=test_user" >> .env
+          echo "POSTGRES_PW=test_password" >> .env
+          echo "POSTGRES_DB=fastwrap_test_db" >> .env
+          echo "REDIS_HOST=redis" >> .env
+          echo "REDIS_PORT=6379" >> .env
+          echo "PORT=8555" >> .env
+          echo "HOST=0.0.0.0" >> .env
+          
+      - name: Build and start services
+        run: docker compose up -d --build
+      
+      - name: Wait for services to be ready
+        run: docker compose exec -T api sleep 10
+      
       - name: Run tests
-        env:
-          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/fastwrap_test_db
-          REDIS_HOST: localhost
-
-        run: uv run pytest
+        run: docker compose exec -T api uv run pytest
+      
+      - name: Stop services
+        if: always()
+        run: docker compose down
