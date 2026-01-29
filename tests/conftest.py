@@ -6,14 +6,14 @@ import asyncio
 from main import app
 from .MockUser import MockUser
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
 async def setup_database():
     """Initialization of database pool once for all tests, closes on teardown"""
     await init_db()
     yield
     await close_db()
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
+@pytest_asyncio.fixture(scope="module", loop_scope="session")
 async def authenticated_user():
     test_user = MockUser()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

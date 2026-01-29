@@ -5,7 +5,7 @@ from httpx import AsyncClient, ASGITransport
 from main import app
 from .MockUser import MockUser
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_character_creation_with_ttl(authenticated_user: MockUser):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post(
@@ -25,7 +25,7 @@ async def test_character_creation_with_ttl(authenticated_user: MockUser):
     assert "id" in response_data["data"], f"'id' field is missing from payload: {response_data}"
     assert "ttl" in response_data["data"], f"'TTL' field is missing from payload: {response_data}"
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_character_creation_no_ttl(authenticated_user: MockUser):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post(
@@ -44,7 +44,7 @@ async def test_character_creation_no_ttl(authenticated_user: MockUser):
     assert response_data["data"]["agent_role"] == authenticated_user.character
     assert "id" in response_data["data"], f"'id' field is missing from payload: {response_data}"
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_character_get(authenticated_user: MockUser):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.get(
@@ -58,7 +58,7 @@ async def test_character_get(authenticated_user: MockUser):
     assert "data" in response_data, f"'data' is missing from payload: {response_data}"
     assert response_data["data"] == authenticated_user.character
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_character_get_all(authenticated_user: MockUser):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.get(
@@ -71,7 +71,7 @@ async def test_character_get_all(authenticated_user: MockUser):
     assert response.status_code == 200, f"Expected HTTP code 200, got {response.status_code} instead."
     assert "data" in response_data, f"'data' missing from payload: {response_data}"
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_character_patch(authenticated_user: MockUser):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.patch(
@@ -87,7 +87,7 @@ async def test_character_patch(authenticated_user: MockUser):
         assert response_data["data"] != authenticated_user.character, f"Payload in wrong format: {response_data}"
         authenticated_user.character = response_data["data"]
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_character_deletion(authenticated_user: MockUser):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.delete(
