@@ -53,7 +53,7 @@ class crud_management():
                 row = await conn.fetchrow(
                     """
                     UPDATE characters
-                    SET agent_role = $1
+                    SET agent_role = $1,
                         ttl = $2
                     WHERE id = $3
                         AND client_id = $4
