@@ -32,7 +32,7 @@ async def store_message(request: Completions, store_id: str):
             logger.info(f"context: {context}")
             if context is None:
                 return None
-            await r.lpush(f"chat:{store_id}:{request.uuid}", json.dumps({"role": "system", "content": context[0]}))
+            await r.lpush(f"chat:{store_id}:{request.uuid}", json.dumps({"role": "system", "content": context}))
             messages: list[str] = await r.lrange(f"chat:{store_id}:{request.uuid}", 0, -1)
             parsed: list[dict[str, str]] = [json.loads(msg) for msg in messages]
 
