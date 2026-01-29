@@ -29,6 +29,9 @@ jobs:
           
       - name: Build and start services
         run: docker compose up -d --build
+        env:
+          UID: 0
+          GID: 0
       
       - name: Wait for services to be ready
         run: docker compose exec -T api sleep 10
