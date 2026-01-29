@@ -33,6 +33,10 @@ jobs:
       - name: Wait for services to be ready
         run: docker compose exec -T api sleep 10
       
+      - name: Check container logs
+        if: always()
+        run: docker compose logs api
+      
       - name: Run tests
         run: docker compose exec -T api uv run pytest
       
