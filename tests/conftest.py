@@ -1,9 +1,17 @@
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
+from app.database.init import init_db, close_db
 import pytest
 import asyncio
 from main import app
 from .MockUser import MockUser
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def setup_database():
+    """Initialization of database pool once for all tests, closes on teardown"""
+    await init_db()
+    yield
+    await close_db()
 
 @pytest_asyncio.fixture(scope="module", loop_scope="module")
 async def authenticated_user():
