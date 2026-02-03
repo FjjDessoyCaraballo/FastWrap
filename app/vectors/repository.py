@@ -33,7 +33,7 @@ class VectorRepo:
                     """
                     INSERT INTO embeddings (client_id, entity_type, entity_id, content, embedding, metadata)
                     VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT (client_id, entity_type, entity_id)
+                    ON CONFLICT (client_id, entity_type, entity_id) WHERE deleted_at IS NULL
                     DO UPDATE SET
                         content = EXCLUDED.content,
                         embedding = EXCLUDED.embedding,
