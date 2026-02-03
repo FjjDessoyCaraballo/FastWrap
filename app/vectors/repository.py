@@ -3,6 +3,7 @@ import uuid
 from typing import Any, Optional
 
 import asyncpg
+import json
 from pgvector import Vector
 
 from ..database.init import init_db
@@ -29,6 +30,7 @@ class VectorRepo:
 
             pool = await init_db()
             async with pool.acquire() as conn:
+                meta_param = json.dumps(metadata) if metadata is not None else None
                 row = await conn.fetchrow(
                     """
                     INSERT INTO embeddings (client_id, entity_type, entity_id, content, embedding, metadata)
@@ -47,7 +49,7 @@ class VectorRepo:
                     eid,
                     content,
                     Vector(embedding),
-                    metadata,
+                    meta_param
                 )
             return dict(row) if row else None
 
