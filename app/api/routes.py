@@ -336,7 +336,7 @@ async def delete_clients(user = Depends(verify_api_key)):
     
 @router.post("/api/vectors/upsert", status_code=status.HTTP_201_CREATED)
 async def vectors_upsert(request: schemas.VectorUpsertRequest, user = Depends(verify_api_key)):
-    store_id = str([user[0]])
+    store_id = str(user[0])
     row = await vector_service.upsert_text_snippet(client_id=store_id, entity_type=request.entity_type,
                         entity_id=request.entity_id, content=request.content,metadata=request.metadata)
     if row is None:
