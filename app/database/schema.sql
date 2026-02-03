@@ -48,10 +48,14 @@ CREATE TABLE IF NOT EXISTS embeddings (
     deleted_at  TIMESTAMPTZ
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_embeddings_unique_active
+ON embeddings (client_id, entity_type, entity_id)
+WHERE deleted_at IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_embeddings_embedding_hnsw
     ON embeddings
     USING hnsw (embedding vector_cosine_ops)
     WHERE deleted_at IS NULL;
 
-INSERT INTO app_schema(version) VALUES (2)
+INSERT INTO app_schema(version) VALUES (3)
 ON CONFLICT (version) DO NOTHING;
