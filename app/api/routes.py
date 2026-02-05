@@ -1,4 +1,4 @@
-from fastapi import status, Path, APIRouter, Response, Header, HTTPException, Depends
+from fastapi import status, Path, APIRouter, Header, HTTPException, Depends
 from ..models import schemas
 from ..chat.service import store_message
 from ..clients import service as client_service
@@ -267,13 +267,11 @@ async def signup(request: schemas.AuthRequest):
     
     Parameters:
     -----------
-    
     request : AuthRequest
         Object that follows AuthRequest schema.
 
     Returns:
     --------
-
     resource : dict
         JSON containing data and metadata after registration is complete.
     """
@@ -303,7 +301,6 @@ async def update_clients(
 
     Returns:
     --------
-
     resource : dict
         JSON containing data and metadata after registration is complete.
     """
@@ -329,7 +326,6 @@ async def update_client_key(user = Depends(verify_api_key)):
     """
     Parameters:
     -----------
-    
     user : dict
         Object that resulting from middleware verification of API key. If the API key is
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
@@ -353,7 +349,6 @@ async def delete_clients(user = Depends(verify_api_key)):
     """
     Parameters:
     -----------
-    
     user : dict
         Object that resulting from middleware verification of API key. If the API key is
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
@@ -375,7 +370,6 @@ async def vectors_upsert(
     """
     Parameters:
     -----------
-    
     user : dict
         Object that resulting from middleware verification of API key. If the API key is
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
@@ -400,7 +394,6 @@ async def vectors_search(
     """
     Parameters:
     -----------
-    
     user : dict
         Object that resulting from middleware verification of API key. If the API key is
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
