@@ -3,11 +3,9 @@ from ..infrastructure.redis_client import redis_client as r
 from fastapi import HTTPException
 from ..agents.chatbot_agent import ChatBot
 from typing import Any
-import logging
-import json
-
 from config import settings
-
+import json
+import logging
 
 logger = logging.getLogger(__name__)
 
