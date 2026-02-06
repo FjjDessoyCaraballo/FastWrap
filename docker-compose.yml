@@ -4,7 +4,7 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     ports:
       - "${PORT:-8555}:8555"
-    mem_limit: 1g 
+    mem_limit: 2g 
     environment:
       - FASTWRAP_API_KEY=${FASTWRAP_API_KEY}
       - PORT=${PORT}
