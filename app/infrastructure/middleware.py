@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+from config import settings
 import logging
 import time
 
@@ -13,7 +14,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self,
         request: Request,
-        call_next: Callable[[Request], Awaitable[Response]]
+        call_next
         ) -> Response:
         """
         Rate limiter to avoid DDoS attacks. This middleware is responsible for checking
@@ -29,7 +30,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         request : Request
             HTTP request coming from an user.
 
-        call_next : Callable[[Request], Awaitable[Response]]
+        call_next
             Complex type defined by base class BaseHTTPMiddleware
 
         Returns:
@@ -56,12 +57,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         try:
             now = int(time.time())
-            bucket = now // 10
+            bucket = now // settings.API_WINDOW
 
             attempts: int = await r.incr(f"middleware:{ip}:{bucket}")
             if attempts == 1:
-                await r.expire(f"middleware:{ip}:{bucket}", 15)
-            elif attempts >= 3:
+                await r.expire(f"middleware:{ip}:{bucket}", settings.API_WINDOW_EXPIRE)
+            elif attempts > settings.API_LIMIT:
                 return JSONResponse(
                     status_code=429,
                     content={"detail": "Too many requests"}
