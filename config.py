@@ -4,6 +4,9 @@ from pydantic import ConfigDict
 
 class Settings(BaseSettings):
     FASTWRAP_API_KEY: str = "1234"
+    API_LIMIT: int = 100
+    API_WINDOW: int = 10
+    API_WINDOW_EXPIRE: int = 15
     REDIS_API_KEY: str = "dummy"
     REDIS_USER: str = "User123"
     REDIS_USER_PW: str = "dummy"
