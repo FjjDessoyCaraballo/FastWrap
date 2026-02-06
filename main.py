@@ -29,11 +29,17 @@ if not logger.handlers:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> None:
-    logger.info("Initializing database...")
-    await init_db()
-    logger.info("Database ready!")
+    try:
+        logger.info("Initializing database...")
+        await init_db()
+        logger.info("Database ready!")
+        logger.info ("Pinging redis...")
+        await redis_client.ping()
+        logger.info("Redis client pinged")
+    except Exception as e:
+        logger.error(f"failed to initialize dependencies: {e}")
+        raise
     yield
-    # Shut down functions later go here
     logger.info("Shutting down application...")
     await close_db()
 
