@@ -13,7 +13,7 @@ async def setup_database():
     yield
     await close_db()
 
-@pytest_asyncio.fixture(scope="module", loop_scope="session")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def authenticated_user():
     test_user = MockUser()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
