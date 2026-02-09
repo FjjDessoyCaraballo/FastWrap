@@ -78,7 +78,7 @@ class VectorRepo:
                     WHERE client_id = $2
                       AND deleted_at IS NULL
                       AND ($3::text IS NULL OR entity_type = $3)
-                      AND ($4::jsonb IS NULL OR COALESCE(metadata, '{}'::jsonb) @> $4::jsonb)
+                      AND ($4::jsonb IS NULL OR metadata @> $4::jsonb)
                       AND ($5::text IS NULL OR entity_type <> $5)
                     ORDER BY embedding <=> $1
                     LIMIT $6

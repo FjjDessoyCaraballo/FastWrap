@@ -3,11 +3,14 @@ import math
 import re
 import uuid
 from pathlib import Path
+
 import pytest
 from httpx import ASGITransport, AsyncClient
+
 from config import settings
 from main import app
 from .MockUser import MockUser
+
 
 def _schema_embedding_dim() -> int:
     """Parse the declared pgvector dimension from app/database/schema.sql."""
@@ -32,12 +35,27 @@ def _deterministic_vector(text: str, dim: int) -> list[float]:
     return [v / norm for v in vals]
 
 
+async def _store_id_from_api_key(api_key: str) -> str:
+    """
+    Your vector service functions require client_id (store_id).
+    Endpoints hide it behind verify_api_key, so for service-level tests we fetch it via DB.
+    """
+    from app.clients.repository import crud_management
+
+    crud = crud_management()
+    row = await crud.db_select_client_by_key(api_key)
+    assert row is not None, "Could not resolve store_id from api_key"
+    return str(row[0])
+
+
 @pytest.fixture(autouse=True)
 def _mock_embeddings(monkeypatch):
     """Avoid calling external embedding APIs during tests."""
     dim = _schema_embedding_dim()
+
     async def fake_embed_text(text: str) -> list[float]:
         return _deterministic_vector(text, dim)
+
     # service.py does `from .embeddings import embed_text`, so patch the reference in service.
     import app.vectors.service as vector_service
     monkeypatch.setattr(vector_service, "embed_text", fake_embed_text)
@@ -176,3 +194,99 @@ async def test_vector_upsert_is_idempotent_per_entity(authenticated_user: MockUs
     # Should update the same logical row (same id) if ON CONFLICT is correctly configured.
     assert str(d1["id"]) == str(d2["id"])
     assert d2["content"] == second
+
+
+# ----------------------------------------------------------------------
+# NEW: service-level tests for the "new" vector functions
+# (metadata_filter + exclude_entity_type)
+# ----------------------------------------------------------------------
+
+@pytest.mark.asyncio(loop_scope="module")
+async def test_semantic_search_metadata_filter_scopes_results(authenticated_user: MockUser):
+    """
+    Validates: semantic_search(... metadata_filter=...) only returns rows whose metadata contains that filter.
+    This is required for chat memory scoping (character_id).
+    """
+    import app.vectors.service as vector_service
+
+    store_id = await _store_id_from_api_key(authenticated_user.api_key)
+
+    char_a = str(uuid.uuid4())
+    char_b = str(uuid.uuid4())
+
+    content_a = "Chat memory: user likes apples."
+    content_b = "Chat memory: user likes oranges."
+
+    await vector_service.upsert_text_snippet(
+        client_id=store_id,
+        entity_type="chat",
+        entity_id=str(uuid.uuid4()),
+        content=content_a,
+        metadata={"character_id": char_a, "role": "user"},
+    )
+    await vector_service.upsert_text_snippet(
+        client_id=store_id,
+        entity_type="chat",
+        entity_id=str(uuid.uuid4()),
+        content=content_b,
+        metadata={"character_id": char_b, "role": "user"},
+    )
+
+    rows = await vector_service.semantic_search(
+        client_id=store_id,
+        query=content_a,  # exact query => deterministic perfect match with our fake embedding
+        top_k=10,
+        entity_type="chat",
+        metadata_filter={"character_id": char_a},
+    )
+
+    assert isinstance(rows, list)
+    assert rows, "Expected at least one result"
+    assert all((r.get("metadata") or {}).get("character_id") == char_a for r in rows), (
+        "metadata_filter must scope results by metadata @> filter"
+    )
+    assert any(r.get("content") == content_a for r in rows)
+    assert all(r.get("content") != content_b for r in rows), "Should not leak other character's chat memory"
+
+
+@pytest.mark.asyncio(loop_scope="module")
+async def test_semantic_search_exclude_entity_type_works_without_metadata_filter(authenticated_user: MockUser):
+    """
+    Validates: semantic_search(... exclude_entity_type='chat') excludes chat rows even if metadata_filter is None.
+    This is required for KB retrieval (exclude chat turns).
+    """
+    import app.vectors.service as vector_service
+
+    store_id = await _store_id_from_api_key(authenticated_user.api_key)
+
+    # Same content => identical embedding => without exclusion, chat would "win".
+    shared = "Shipping policy: delivery in 2-5 business days."
+
+    await vector_service.upsert_text_snippet(
+        client_id=store_id,
+        entity_type="chat",
+        entity_id=str(uuid.uuid4()),
+        content=shared,
+        metadata={"character_id": str(uuid.uuid4()), "role": "user"},
+    )
+    await vector_service.upsert_text_snippet(
+        client_id=store_id,
+        entity_type="policy",
+        entity_id=str(uuid.uuid4()),
+        content=shared,
+        metadata={"source": "pytest"},
+    )
+
+    rows = await vector_service.semantic_search(
+        client_id=store_id,
+        query=shared,
+        top_k=10,
+        entity_type=None,
+        metadata_filter=None,
+        exclude_entity_type="chat",
+    )
+
+    assert isinstance(rows, list)
+    assert rows, "Expected at least one result"
+    assert all(r.get("entity_type") != "chat" for r in rows), "exclude_entity_type must filter out chat rows"
+    assert any(r.get("entity_type") == "policy" and r.get("content") == shared for r in rows)
