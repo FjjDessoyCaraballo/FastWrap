@@ -106,7 +106,7 @@ def _mock_llm_and_redis(monkeypatch):
     monkeypatch.setattr(chat_service, "r", fake_r)
 
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_chat_wires_vector_retrieval_and_stores_chat_turns(authenticated_user):
     """End-to-end-ish:
     1) Upsert a KB snippet (entity_type != chat)
