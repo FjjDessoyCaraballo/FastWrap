@@ -6,7 +6,7 @@ from httpx import AsyncClient, ASGITransport
 from main import app
 from .MockUser import MockUser
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_signup_success():
     temp_user = MockUser()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -23,7 +23,7 @@ async def test_signup_success():
     assert "data" in response_data, f"'data' key missing in response: {response_data}"
     assert "api_key" in response_data["data"], f"'api_key' missing in data: {response_data}"
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_client_patch_email(authenticated_user: MockUser):
     authenticated_user.email = authenticated_user.generate_random_email()
 
@@ -36,7 +36,7 @@ async def test_client_patch_email(authenticated_user: MockUser):
 
     assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_client_patch_password(authenticated_user: MockUser):
     authenticated_user.password = authenticated_user.generate_random_password()
 
@@ -49,7 +49,7 @@ async def test_client_patch_password(authenticated_user: MockUser):
     
     assert response.status_code == 201, f"Expected 201, got {response.status_code}: {response.json()}"
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_client_regenerate_key(authenticated_user: MockUser):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.post(
@@ -58,11 +58,11 @@ async def test_client_regenerate_key(authenticated_user: MockUser):
         )
 
     response_data = response.json()
-    print(response_data)
     assert response_data["api_key"] != authenticated_user.api_key
+    authenticated_user.api_key = response_data["api_key"]
     assert response.status_code == 201, f"Expected 201, got {response.status_code}"
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_client_delete(authenticated_user: MockUser):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         response = await ac.delete(

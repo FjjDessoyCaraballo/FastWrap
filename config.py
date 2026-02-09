@@ -3,16 +3,16 @@ from typing import Optional
 from pydantic import ConfigDict
 
 class Settings(BaseSettings):
-    FASTWRAP_API_KEY: str = 1234
-    REDIS_API_KEY: str
+    FASTWRAP_API_KEY: str = "1234"
+    REDIS_API_KEY: str = "dummy"
     REDIS_USER: str = "User123"
-    REDIS_USER_PW: str
+    REDIS_USER_PW: str = "dummy"
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     PORT: int = 8555
     HOST: str = "0.0.0.0"
     MODEL: str = "gpt-4o-mini"
-    MODEL_KEY: str
+    MODEL_KEY: str | None = None
     MODEL_PROVIDER: str | None = None
     LANGCHAIN_API_KEY: str | None = None
     LANGSMITH_TRACING_V2: bool = True

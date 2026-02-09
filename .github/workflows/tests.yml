@@ -1,0 +1,48 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create .env file
+        run: |
+          echo "DATABASE_URL=postgresql://test_user:test_password@postgres:5432/fastwrap_test_db" > .env
+          echo "POSTGRES_USER=test_user" >> .env
+          echo "POSTGRES_PW=test_password" >> .env
+          echo "POSTGRES_DB=fastwrap_test_db" >> .env
+          echo "REDIS_HOST=redis" >> .env
+          echo "REDIS_PORT=6379" >> .env
+          echo "PORT=8555" >> .env
+          echo "HOST=0.0.0.0" >> .env
+          echo "FASTWRAP_API_KEY=1234" >> .env
+          echo "MODEL=gpt-4o-mini" >> .env
+          echo "MODEL_KEY=sk-fake-test-key" >> .env
+          
+      - name: Build and start services
+        run: docker compose up -d --build
+        env:
+          UID: 0
+          GID: 0
+      
+      - name: Wait for services to be ready
+        run: docker compose exec -T api sleep 10
+      
+      - name: Check container logs
+        if: always()
+        run: docker compose logs api
+      
+      - name: Run tests
+        run: docker compose exec -T api uv run pytest
+      
+      - name: Stop services
+        if: always()
+        run: docker compose down
