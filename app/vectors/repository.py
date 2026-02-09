@@ -1,11 +1,8 @@
 import logging
 import uuid
 from typing import Any, Optional
-
 import asyncpg
-import json
 from pgvector import Vector
-
 from ..database.init import init_db
 
 logger = logging.getLogger(__name__)
@@ -27,14 +24,12 @@ class VectorRepo:
         try:
             cid = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
             eid = entity_id if isinstance(entity_id, uuid.UUID) else uuid.UUID(entity_id)
-
             pool = await init_db()
             async with pool.acquire() as conn:
-                meta_param = json.dumps(metadata) if metadata is not None else None
                 row = await conn.fetchrow(
                     """
                     INSERT INTO embeddings (client_id, entity_type, entity_id, content, embedding, metadata)
-                    VALUES ($1, $2, $3, $4, $5, $6)
+                    VALUES ($1, $2, $3, $4, $5, $6::jsonb)
                     ON CONFLICT (client_id, entity_type, entity_id) WHERE deleted_at IS NULL
                     DO UPDATE SET
                         content = EXCLUDED.content,
@@ -49,10 +44,9 @@ class VectorRepo:
                     eid,
                     content,
                     Vector(embedding),
-                    meta_param
+                    metadata
                 )
             return dict(row) if row else None
-
         except (ValueError, TypeError):
             logger.exception("Invalid UUID passed to VectorRepo.upsert_embedding")
             return None
@@ -67,10 +61,11 @@ class VectorRepo:
         query_embed: list[float],
         top_k: int = 5,
         entity_type: Optional[str] = None,
+        metadata_filter: Optional[dict[str, Any]] = None,
+        exclude_entity_type: Optional[str] = None
     ) -> list[dict[str, Any]]:
         try:
             cid = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)
-
             pool = await init_db()
             async with pool.acquire() as conn:
                 rows = await conn.fetch(
@@ -83,17 +78,19 @@ class VectorRepo:
                     WHERE client_id = $2
                       AND deleted_at IS NULL
                       AND ($3::text IS NULL OR entity_type = $3)
+                      AND ($4::jsonb IS NULL OR COALESCE(metadata, '{}'::jsonb) @> $4::jsonb)
+                      AND ($5::text IS NULL OR entity_type <> $5)
                     ORDER BY embedding <=> $1
-                    LIMIT $4
+                    LIMIT $6
                     """,
                     Vector(query_embed),
                     cid,
                     entity_type,
-                    int(top_k),
+                    metadata_filter,
+                    exclude_entity_type,
+                    int(top_k)
                 )
-
             return [dict(r) for r in rows]
-
         except (ValueError, TypeError):
             logger.exception("Invalid UUID passed to VectorRepo.search")
             return []
