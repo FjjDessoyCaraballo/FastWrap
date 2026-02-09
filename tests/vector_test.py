@@ -61,7 +61,7 @@ def _mock_embeddings(monkeypatch):
     monkeypatch.setattr(vector_service, "embed_text", fake_embed_text)
 
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_vector_schema_dimension_matches_settings():
     """If this fails, your app will eventually crash when inserting vectors."""
     assert settings.EMBEDDING_DIM == _schema_embedding_dim(), (
@@ -69,7 +69,7 @@ async def test_vector_schema_dimension_matches_settings():
     )
 
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_vector_upsert_success(authenticated_user: MockUser):
     entity_id = str(uuid.uuid4())
     payload = {
@@ -94,7 +94,7 @@ async def test_vector_upsert_success(authenticated_user: MockUser):
     assert data["content"] == payload["content"]
 
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_vector_search_returns_best_match(authenticated_user: MockUser):
     # Two different snippets
     entity_a = str(uuid.uuid4())
@@ -132,7 +132,7 @@ async def test_vector_search_returns_best_match(authenticated_user: MockUser):
     assert rows[0]["content"] == content_b
 
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_vector_search_filters_by_entity_type(authenticated_user: MockUser):
     entity_policy = str(uuid.uuid4())
     entity_faq = str(uuid.uuid4())
@@ -166,7 +166,7 @@ async def test_vector_search_filters_by_entity_type(authenticated_user: MockUser
     assert any(r["content"] == content_policy for r in rows)
 
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_vector_upsert_is_idempotent_per_entity(authenticated_user: MockUser):
     """Requires a unique constraint on (client_id, entity_type, entity_id) for ON CONFLICT to work."""
     entity_id = str(uuid.uuid4())
@@ -201,7 +201,7 @@ async def test_vector_upsert_is_idempotent_per_entity(authenticated_user: MockUs
 # (metadata_filter + exclude_entity_type)
 # ----------------------------------------------------------------------
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_semantic_search_metadata_filter_scopes_results(authenticated_user: MockUser):
     """
     Validates: semantic_search(... metadata_filter=...) only returns rows whose metadata contains that filter.
@@ -249,7 +249,7 @@ async def test_semantic_search_metadata_filter_scopes_results(authenticated_user
     assert all(r.get("content") != content_b for r in rows), "Should not leak other character's chat memory"
 
 
-@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.asyncio(loop_scope="session")
 async def test_semantic_search_exclude_entity_type_works_without_metadata_filter(authenticated_user: MockUser):
     """
     Validates: semantic_search(... exclude_entity_type='chat') excludes chat rows even if metadata_filter is None.
