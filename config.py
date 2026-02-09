@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     EMBEDDING_MODEL: str = 'text-embedding-3-small'
     EMBEDDING_DIM: int = 1536
+    VECTOR_CHAT_STORE_ENABLED: bool = True
+    VECTOR_CHAT_MEMORY_ENABLED: bool = True
+    VECTOR_CHAT_ENTITY_TYPE: str = "chat"
+    VECTOR_CHAT_MEMORY_TOP_K_CHAT: int = 4
+    VECTOR_CHAT_MEMORY_TOP_K_KB: int = 4
+    VECTOR_CHAT_MEMORY_MAX_CHARS: int = 2400
     model_config = ConfigDict(env_file=".env")
 
 settings = Settings()
