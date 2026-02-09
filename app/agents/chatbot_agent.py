@@ -24,11 +24,17 @@ class ChatBot():
     async def chat(self, parsed_messages: list[dict[str, str]]) -> dict[str, Any]:
         try:
             response = self.agent.invoke({"messages": parsed_messages})
+            return response
         except Exception as e:
             logger.error(f"Unexpected error at chat method: {e}")
-        return response
+            return {}
 
-    async def context(self, messages: list[dict[str, str]], uuid: str, store_id: str) -> list[dict[str, str]]:
+    async def context(self, uuid: str, store_id: str) -> str | None:
+        """
+        Fetch the character's agent_role (system prompt text) from DB.
+        NOTE: db_select_character returns a string, not a tuple.
+        """
+        
         try:
             crud = crud_management()
             context = await crud.db_select_character(uuid, store_id)
