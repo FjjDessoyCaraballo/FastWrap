@@ -1,4 +1,4 @@
-from fastapi import status, Path, APIRouter, Response, Header, HTTPException, Depends
+from fastapi import status, Path, APIRouter, Header, HTTPException, Depends
 from ..models import schemas
 from ..chat.service import store_message
 from ..clients import service as client_service
@@ -21,7 +21,7 @@ async def root():
     return ({ 
         "Title": "FastWrap Chatbot wrapper",
         "Version": "1.0.0.",
-        "Author": "Felipe",
+        "Author": "Felipe Dessoy Caraballo && Nikolai Zharkevich",
         "Status": "Development"
         })
  
@@ -200,7 +200,7 @@ async def get_all_characters(user = Depends(verify_api_key)):
 
     Returns:
     --------
-    agent_roles : str
+    agent_roles : dict
         Dictionary containing all roles from specific store_id.
 
     """
@@ -264,6 +264,16 @@ async def signup(request: schemas.AuthRequest):
     """
     Signup endpoint for direct users. This endpoint is the entrypoint for usage of all
     other service endpoints. 
+    
+    Parameters:
+    -----------
+    request : AuthRequest
+        Object that follows AuthRequest schema.
+
+    Returns:
+    --------
+    resource : dict
+        JSON containing data and metadata after registration is complete.
     """
 
     resource: dict = await client_service.register_client(request)
@@ -281,6 +291,18 @@ async def update_clients(
     user = Depends(verify_api_key)
     ):
     """
+    Parameters:
+    -----------
+    
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+
+    Returns:
+    --------
+    resource : dict
+        JSON containing data and metadata after registration is complete.
     """
     store_id: str = user[0]
     
@@ -301,7 +323,14 @@ async def update_clients(
 
 @router.post("/clients/me/regenerate-key", status_code=status.HTTP_201_CREATED)
 async def update_client_key(user = Depends(verify_api_key)):
-    
+    """
+    Parameters:
+    -----------
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+    """    
     store_id: str = user[0]
 
     new_key: str = await client_service.regenerate_key(store_id)
@@ -320,7 +349,6 @@ async def delete_clients(user = Depends(verify_api_key)):
     """
     Parameters:
     -----------
-    
     user : dict
         Object that resulting from middleware verification of API key. If the API key is
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
@@ -335,8 +363,19 @@ async def delete_clients(user = Depends(verify_api_key)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
     
 @router.post("/api/vectors/upsert", status_code=status.HTTP_201_CREATED)
-async def vectors_upsert(request: schemas.VectorUpsertRequest, user = Depends(verify_api_key)):
-    store_id = str(user[0])
+async def vectors_upsert(
+    request: schemas.VectorUpsertRequest, 
+    user = Depends(verify_api_key)
+    ):
+    """
+    Parameters:
+    -----------
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+    """    
+    store_id = str([user[0]])
     row = await vector_service.upsert_text_snippet(client_id=store_id, entity_type=request.entity_type,
                         entity_id=request.entity_id, content=request.content,metadata=request.metadata)
     if row is None:
@@ -348,7 +387,18 @@ async def vectors_upsert(request: schemas.VectorUpsertRequest, user = Depends(ve
         }
 
 @router.post("/api/vectors/search", status_code=status.HTTP_200_OK)
-async def vectors_search(request: schemas.VectorSearchRequest, user = Depends(verify_api_key)):
+async def vectors_search(
+    request: schemas.VectorSearchRequest, 
+    user = Depends(verify_api_key)
+    ):
+    """
+    Parameters:
+    -----------
+    user : dict
+        Object that resulting from middleware verification of API key. If the API key is
+        verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
+        Update, and Delete) operations.
+    """
     store_id = str(user[0])
     rows = await vector_service.semantic_search(client_id=store_id, query=request.query,
                                     top_k=request.top_k, entity_type=request.entity_type)

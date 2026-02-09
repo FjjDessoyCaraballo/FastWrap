@@ -32,6 +32,7 @@ jobs:
         env:
           UID: 0
           GID: 0
+          UV_LINK_MODE: copy
       
       - name: Wait for services to be ready
         run: docker compose exec -T api sleep 10
