@@ -79,7 +79,7 @@ class crud_management:
     
     async def db_select_client_by_key(self, api_key: str):
         """
-        Used by verify_api_key dependency. Returns (id, email, api_key) tuple.
+        Used by verify_api_key dependency. Returns (id, email, api_key) dict.
         """
         try:
             pool = await init_db()

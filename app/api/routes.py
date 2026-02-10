@@ -375,11 +375,11 @@ async def vectors_upsert(
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
         Update, and Delete) operations.
     """    
-    store_id = str([user[0]])
+    store_id = str(user[0])
     row = await vector_service.upsert_text_snippet(client_id=store_id, entity_type=request.entity_type,
                         entity_id=request.entity_id, content=request.content,metadata=request.metadata)
     if row is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, details='Failed to upsert vector')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Failed to upsert vector')
 
     return {
         "message": "Vector upserted",

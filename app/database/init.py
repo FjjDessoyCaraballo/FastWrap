@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import json
 from pathlib import Path
 import asyncpg
 from pgvector.asyncpg import register_vector
@@ -8,12 +9,27 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 SCHEMA_PATH = Path(__file__).with_name('schema.sql')
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _pool: asyncpg.Pool | None = None
 
 async def _init_conn(conn: asyncpg.Connection) -> None:
     await conn.execute('CREATE EXTENSION IF NOT EXISTS vector;')
+    # asyncpg defaults json/jsonb to str. These codecs allow passing dict/list directly.
+    await conn.set_type_codec(
+        "json",
+        encoder=json.dumps,
+        decoder=json.loads,
+        schema="pg_catalog",
+        format="text",
+    )
+    await conn.set_type_codec(
+        "jsonb",
+        encoder=json.dumps,
+        decoder=json.loads,
+        schema="pg_catalog",
+        format="text",
+    )
     await register_vector(conn)
 
 def _split_sql_statements(sql: str) -> list[str]:

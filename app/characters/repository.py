@@ -145,7 +145,7 @@ class crud_management():
     
     async def db_select_character_all(self, client_id: str):
         """
-        Returns list[tuple] like your old sqlite fetchall().
+        Returns dict like your old sqlite fetchall().
         """
         try:
             id = client_id if isinstance(client_id, uuid.UUID) else uuid.UUID(client_id)

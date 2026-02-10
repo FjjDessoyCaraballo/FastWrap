@@ -22,11 +22,17 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = "postgres"
     POSTGRES_PORT: int = 5432
     POSTGRES_DB: str = "fastwrap_db"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PW: str = "postgres"
+    POSTGRES_USER: str
+    POSTGRES_PW: str 
     DATABASE_URL: str
     EMBEDDING_MODEL: str = 'text-embedding-3-small'
     EMBEDDING_DIM: int = 1536
+    VECTOR_CHAT_STORE_ENABLED: bool = True
+    VECTOR_CHAT_MEMORY_ENABLED: bool = True
+    VECTOR_CHAT_ENTITY_TYPE: str = "chat"
+    VECTOR_CHAT_MEMORY_TOP_K_CHAT: int = 4
+    VECTOR_CHAT_MEMORY_TOP_K_KB: int = 4
+    VECTOR_CHAT_MEMORY_MAX_CHARS: int = 2400
     model_config = ConfigDict(env_file=".env")
 
 settings = Settings()
