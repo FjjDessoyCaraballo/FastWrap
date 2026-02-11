@@ -7,9 +7,9 @@ A wrapper backend service designed to simplify chatbot integrations through abst
 The core architecture follows a thin-controller pattern:
 ```
 routes.py (thin)
-    ↓ calls
+    | calls
 Services (business logic)
-    ↓ uses
+    | uses
 Repository / RedisClient (data storage)
 ```
 
@@ -49,41 +49,46 @@ Repository / RedisClient (data storage)
 1. Clone the repository
 2. Install dependencies:
 ```bash
-   uv sync
+uv sync
 ```
-3. Copy `.env.example` to `.env` and fill in values
+3. Copy `.example.env` to `.env` and fill in the required values:
+```bash
+cp .example.env .env
+```
 4. Start services:
 ```bash
-   docker compose up -d
+docker compose up -d
 ```
 5. Run the application:
 ```bash
-   uv run main.py
+uv run main.py
 ```
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `FASTWRAP_API_KEY` | Yes | Service API key |
-| `REDIS_HOST` | Yes | Redis host address (default: redis) |
-| `REDIS_PORT` | Yes | Redis port (default: 6379) |
-| `REDIS_API_KEY` | Yes | Redis authentication key |
-| `PORT` | Yes | Server port (default: 8555) |
-| `HOST` | Yes | Server host (default: 0.0.0.0) |
-| `MODEL` | Yes | LLM model identifier (e.g., gpt-4o-mini) |
-| `MODEL_KEY` | Yes | LLM provider API key |
-| `MODEL_PROVIDER` | No | LLM provider (if auto-detection fails) |
-| `POSTGRES_HOST` | Yes | PostgreSQL host (default: postgres) |
-| `POSTGRES_PORT` | Yes | PostgreSQL port (default: 5432) |
-| `POSTGRES_DB` | Yes | PostgreSQL database name |
-| `POSTGRES_USER` | Yes | PostgreSQL username |
-| `POSTGRES_PW` | Yes | PostgreSQL password |
-| `DATABASE_URL` | Yes | Full PostgreSQL connection string |
-| `EMBEDDING_MODEL` | No | Embedding model (default: text-embedding-3-small) |
-| `EMBEDDING_DIM` | No | Embedding dimensions (default: 1536) |
-| `LANGCHAIN_API_KEY` | No | LangSmith API key for tracing |
-| `LANGSMITH_TRACING_V2` | No | Enable LangSmith tracing (default: true) |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `FASTWRAP_API_KEY` | Yes | `1234` | Service API key |
+| `REDIS_HOST` | Yes | `redis` | Redis host address |
+| `REDIS_PORT` | Yes | `6379` | Redis port |
+| `REDIS_API_KEY` | Yes | - | Redis authentication key |
+| `REDIS_USER` | No | `User123` | Redis username |
+| `REDIS_USER_PW` | No | - | Redis user password |
+| `PORT` | Yes | `8555` | Server port |
+| `HOST` | Yes | `0.0.0.0` | Server host |
+| `MODEL` | Yes | `gpt-4o-mini` | LLM model identifier |
+| `MODEL_KEY` | Yes | - | LLM provider API key |
+| `MODEL_PROVIDER` | No | - | LLM provider (if auto-detection fails) |
+| `POSTGRES_HOST` | Yes | `postgres` | PostgreSQL host |
+| `POSTGRES_PORT` | Yes | `5432` | PostgreSQL port |
+| `POSTGRES_DB` | Yes | `fastwrap_db` | PostgreSQL database name |
+| `POSTGRES_USER` | Yes | `postgres` | PostgreSQL username |
+| `POSTGRES_PW` | Yes | `postgres` | PostgreSQL password |
+| `DATABASE_URL` | Yes | - | Full PostgreSQL connection string |
+| `EMBEDDING_MODEL` | No | `text-embedding-3-small` | Embedding model |
+| `EMBEDDING_DIM` | No | `1536` | Embedding dimensions |
+| `LANGCHAIN_API_KEY` | No | - | LangSmith API key for tracing |
+| `LANGSMITH_TRACING_V2` | No | `true` | Enable LangSmith tracing |
 
 ## API Endpoints
 
@@ -175,9 +180,8 @@ uv run pytest
 ```
 
 Tests are organized by feature:
-- `tests/client_test.py`: Client management tests
-- `tests/character_test.py`: Character CRUD tests
-- `tests/basic_tests.py`: Basic functionality tests
+- `tests/client_test.py`: Client management tests (signup, update, key regeneration, deletion)
+- `tests/character_test.py`: Character CRUD tests (create, read, update, delete)
 
 ## Development
 
@@ -191,8 +195,8 @@ The application uses:
 
 The `docker-compose.yml` includes:
 - **api**: FastAPI application
-- **redis**: Redis cache server
-- **postgres**: PostgreSQL database with pgvector extension
+- **redis**: Redis cache server (redis:7-alpine)
+- **postgres**: PostgreSQL database with pgvector extension (pgvector/pgvector:pg16)
 
 Start all services:
 ```bash
