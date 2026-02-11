@@ -69,11 +69,10 @@ def _extract_assistant_text(response: Any) -> Optional[str]:
 async def store_message(request: Completions, store_id: str):
     try:
         chat_key = f"chat:{store_id}:{request.uuid}"
+        # 1) Store incoming message in Redis
         await r.rpush(chat_key, json.dumps({"role": request.role, "content": request.content}))
-        messages: list[str] = await r.lrange(chat_key, 0, -1)
-        parsed: list[dict[str, str]] = [json.loads(msg) for msg in messages]
+        # 2) If first message in conversation, inject system prompt once
         count_llen = await r.llen(chat_key)
-
         chatbot = ChatBot()
         if count_llen == 1:
             system_prompt = await chatbot.context(request.uuid, store_id)
@@ -82,20 +81,18 @@ async def store_message(request: Completions, store_id: str):
                 return None
             # Prepend system prompt to the conversation
             await r.lpush(chat_key, json.dumps({"role": "system", "content": system_prompt}))
-        # 3) Load conversation from Redis               
+        # 3) Load conversation from Redis
         messages: list[str] = await r.lrange(chat_key, 0, -1)
         parsed: list[dict[str, str]] = [json.loads(msg) for msg in messages]
-        # logging.debug(f"Parsed request for {request.uuid}")
         logger.info(f"count_llen: {count_llen}")
-        logger.info(f"Parsed payload: {parsed}")
-        # logger.info(f"Messages: {messages}")
+        logger.debug(f"Parsed payload: {parsed}")
         # 4) Retrieve vector memory (ephemeral injection, not stored in Redis)
         parsed_for_llm = parsed[:]
         if request.role == "user":
             retrieved = await build_vector_context(
                 store_id=store_id,
                 character_id=request.uuid,
-                query=request.content
+                query=request.content,
             )
             if retrieved:
                 insert_at = 1 if parsed_for_llm and parsed_for_llm[0].get("role") == "system" else 0
@@ -113,18 +110,18 @@ async def store_message(request: Completions, store_id: str):
                 store_id=store_id,
                 character_id=request.uuid,
                 role="user",
-                content=request.content
+                content=request.content,
             )
         if assistant_text:
             await store_chat_turn(
                 store_id=store_id,
                 character_id=request.uuid,
                 role="assistant",
-                content=assistant_text
+                content=assistant_text,
             )
         # 8) TTL for Redis chat buffer
         await r.expire(chat_key, 1200)
-        return response   
+        return response
     except HTTPException as e:
         logger.error(f"Network error caught: {e}")
         return None
