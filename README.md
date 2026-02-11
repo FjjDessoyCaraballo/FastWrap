@@ -57,11 +57,7 @@ cp .example.env .env
 ```
 4. Start services:
 ```bash
-docker compose up -d
-```
-5. Run the application:
-```bash
-uv run main.py
+docker compose up -d && docker compose logs -f
 ```
 
 ## Environment Variables
