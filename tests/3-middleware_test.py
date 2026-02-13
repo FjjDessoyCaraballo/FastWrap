@@ -14,4 +14,4 @@ async def test_middleware_limit():
             assert response.status_code == 200, f"Request {i + 1} supposed to succeed"
         response = await ac.get("/")
         assert response.status_code == 429, f"Expected 429, got {response.status_code}"
-        time.sleep(11)
+        time.sleep(15)
