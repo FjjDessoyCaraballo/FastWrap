@@ -23,6 +23,30 @@ def _extract_assistant_text(response: Any) -> Optional[str]:
       - AIMessage-like object with .content
       - plain string
     """
+    def _content_to_text(content: Any) -> Optional[str]:
+        if content is None:
+            return None
+        if isinstance(content, str):
+            t = content.strip()
+            return t or None
+        if isinstance(content, list):
+            parts: list[str] = []
+            for b in content:
+                if isinstance(b, str):
+                    parts.append(b)
+                elif isinstance(b, dict):
+                    if isinstance(b.get("text"), str):
+                        parts.append(b["text"])
+                    elif isinstance(b.get("content"), str):
+                        parts.append(b["content"])
+            t = "".join(parts).strip()
+            return t or None
+        if isinstance(content, dict):
+            if isinstance(content.get("text"), str):
+                return content["text"].strip() or None
+            if "content" in content:
+                return _content_to_text(content["content"])
+        return None
     if response is None:
         return None
     if isinstance(response, str):
@@ -38,31 +62,34 @@ def _extract_assistant_text(response: Any) -> Optional[str]:
             for msg in reversed(messages):
                 # dict-style messages
                 if isinstance(msg, dict):
-                    if msg.get("role") in {"assistant", "ai"} and isinstance(msg.get("content"), str):
-                        text = msg["content"].strip()
-                        return text or None
+                    role = msg.get("role") or msg.get("type")
+                    if role in {"assistant", "ai"}:
+                        text = _content_to_text(msg.get("content"))
+                        if text:
+                            return text
                     continue
                 # object-style messages (LangChain BaseMessage)
                 msg_type = getattr(msg, "type", None)  # "ai", "human", "system"
                 msg_content = getattr(msg, "content", None)
-                if msg_type in {"ai", "assistant"} and isinstance(msg_content, str):
-                    text = msg_content.strip()
-                    return text or None
+                if msg_type in {"ai", "assistant"}:
+                    text = _content_to_text(msg_content)
+                    if text:
+                        return text
                 if msg.__class__.__name__ == "AIMessage" and isinstance(msg_content, str):
                     text = msg_content.strip()
                     return text or None
         for key in ("output", "text", "final"):
             val = response.get(key)
-            if isinstance(val, str):
-                text = val.strip()
-                return text or None
-        result = response.get("result")
-        if isinstance(result, list):
-            for msg in reversed(result):
-                msg_content = getattr(msg, "content", None)
-                if isinstance(msg_content, str):
-                    text = msg_content.strip()
-                    return text or None
+            text = _content_to_text(val)
+            if text:
+                return text
+        # result = response.get("result")
+        # if isinstance(result, list):
+        #     for msg in reversed(result):
+        #         msg_content = getattr(msg, "content", None)
+        #         if isinstance(msg_content, str):
+        #             text = msg_content.strip()
+        #             return text or None
     return None
 
 
