@@ -3,6 +3,7 @@ import string
 
 class MockUser():
     def __init__(self):
+        self.id: str = ''
         self.email: str = self.generate_random_email()
         self.password: str = self.generate_random_password()
         self.api_key: str = ''
