@@ -45,7 +45,7 @@ async def _store_id_from_api_key(api_key: str) -> str:
     crud = crud_management()
     row = await crud.db_select_client_by_key(api_key)
     assert row is not None, "Could not resolve store_id from api_key"
-    return str(row[0])
+    return str(row["id"])
 
 
 @pytest.fixture(autouse=True)
