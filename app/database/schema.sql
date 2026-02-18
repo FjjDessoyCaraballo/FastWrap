@@ -18,8 +18,12 @@ CREATE TABLE IF NOT EXISTS clients (
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
     subscription    TEXT NOT NULL DEFAULT 'free',
     store_name      TEXT,
-    phone           TEXT
+    phone           TEXT,
+    is_admin        BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+ALTER TABLE clients
+ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_email_active
 ON clients (email)
@@ -57,5 +61,5 @@ CREATE INDEX IF NOT EXISTS idx_embeddings_embedding_hnsw
     USING hnsw (embedding vector_cosine_ops)
     WHERE deleted_at IS NULL;
 
-INSERT INTO app_schema(version) VALUES (3)
+INSERT INTO app_schema(version) VALUES (6)
 ON CONFLICT (version) DO NOTHING;
