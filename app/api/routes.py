@@ -7,6 +7,7 @@ from ..clients import service as client_service
 from ..characters import service as character_service
 from ..auth.dependencies import verify_api_key, require_admin, verify_internal_key
 from ..clients.repository import crud_management
+from ..vectors import service as vector_service
 from typing import Any
 from uuid import UUID
 import sys
