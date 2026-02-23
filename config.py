@@ -6,7 +6,6 @@ class Settings(BaseSettings):
     FASTWRAP_API_KEY: str = "1234"
     API_LIMIT: int = 100
     API_WINDOW: int = 10
-    API_WINDOW_EXPIRE: int = 15
     REDIS_USER: str = "default"
     REDIS_USER_PW: str = "dummy"
     REDIS_HOST: str = "redis"
