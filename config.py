@@ -7,8 +7,7 @@ class Settings(BaseSettings):
     API_LIMIT: int = 100
     API_WINDOW: int = 10
     API_WINDOW_EXPIRE: int = 15
-    REDIS_API_KEY: str = "dummy"
-    REDIS_USER: str = "User123"
+    REDIS_USER: str = "default"
     REDIS_USER_PW: str = "dummy"
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379

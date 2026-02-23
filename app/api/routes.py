@@ -1,6 +1,7 @@
 from fastapi import status, Path, APIRouter, Header, HTTPException, Depends
 from .admin_routes import router as admin_router
 from ..models import schemas
+from ..database.init import init_db
 from ..chat.service import store_message
 from ..clients import service as client_service
 from ..characters import service as character_service
@@ -9,7 +10,6 @@ from ..clients.repository import crud_management
 from typing import Any
 from uuid import UUID
 import sys
-from ..vectors import service as vector_service
 import logging
  
 logger = logging.getLogger(__name__)
@@ -260,7 +260,24 @@ async def chat(
 
 @router.get("/health", status_code=status.HTTP_200_OK)
 async def health():
-    return {"Health": "OK"}
+    services = {}
+
+    try:
+        await redis_client.ping()
+        services["redis"] = "OK"
+    except Exception as e:
+        services["redis"] = f"DOWN: {e}"
+    try:
+        pool = await init_db()
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow("""SELECT 1""")
+        services["postgres"] = "OK"
+    except Exception as e:
+        services["postgres"] = f"DOWN: {e}"
+
+    if any(v.startswith("DOWN") for v in services.values()):
+        return JSONResponse(status_code=503, content=services)
+    return services
 
 @router.post("/auth/signup", status_code=status.HTTP_201_CREATED)
 async def signup(request: schemas.AuthRequest):

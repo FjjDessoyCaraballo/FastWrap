@@ -9,6 +9,7 @@ class MockUser():
         self.api_key: str = ''
         self.character: str = 'You are a botanist who sells flowers.'
         self.character_id: str = ''
+        self.client_id: str = ''
 
     def generate_random_email(self) -> str:
         random_string: str = ''.join(random.choices(string.ascii_letters, k=10))
