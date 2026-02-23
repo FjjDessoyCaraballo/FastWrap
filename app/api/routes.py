@@ -479,7 +479,7 @@ async def vectors_upsert(
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
         Update, and Delete) operations.
     """    
-    store_id = str(str(user["id"]))
+    store_id = str(user["id"])
     row = await vector_service.upsert_text_snippet(client_id=store_id, entity_type=request.entity_type,
                         entity_id=request.entity_id, content=request.content,metadata=request.metadata)
     if row is None:
@@ -503,7 +503,7 @@ async def vectors_search(
         verified, we return the data to the user to be accessed in doing CRUD (Create, Read,
         Update, and Delete) operations.
     """
-    store_id = str(str(user["id"]))
+    store_id = str(user["id"])
     rows = await vector_service.semantic_search(client_id=store_id, query=request.query,
                                     top_k=request.top_k, entity_type=request.entity_type)
     return {
