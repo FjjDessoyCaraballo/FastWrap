@@ -9,7 +9,7 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 SCHEMA_PATH = Path(__file__).with_name('schema.sql')
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 6
 
 _pool: asyncpg.Pool | None = None
 

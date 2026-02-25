@@ -61,7 +61,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             attempts: int = await r.incr(f"middleware:{ip}:{bucket}")
             if attempts == 1:
-                await r.expire(f"middleware:{ip}:{bucket}", settings.API_WINDOW_EXPIRE)
+                await r.expire(f"middleware:{ip}:{bucket}", settings.API_WINDOW)
             elif attempts > settings.API_LIMIT:
                 return JSONResponse(
                     status_code=429,

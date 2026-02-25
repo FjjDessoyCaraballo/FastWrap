@@ -74,3 +74,44 @@ class VectorSearchRequest(BaseModel):
     query: str = Field(..., min_length=1, description="Search query text")
     top_k: int = Field(5, ge=1, le=50, description="Number of results to return")
     entity_type: Optional[str] = Field(None, description="Optional filter by entity_type")
+
+class AdminClientCreateRequest(AuthRequest):
+    is_admin: bool = False
+    is_active: bool = True
+    subscription: str = "free"
+    store_name: Optional[str] = None
+    phone: Optional[str] = None
+
+class AdminClientUpdateRequest(BaseModel):
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    is_admin: Optional[bool] = None
+    is_active: Optional[bool] = None
+    subscription: Optional[str] = None
+    store_name: Optional[str] = None
+    phone: Optional[str] = None
+    
+    @field_validator("password")
+    def password_policy(cls, v):
+        if v is None:
+            return v
+        if len(v) < 10:
+            raise ValueError('Password must be at least 10 characters')
+
+        if not any(char.islower() for char in v):
+            raise ValueError('Must have at least one lowercase character')
+
+        if not any(char.isupper() for char in v):
+            raise ValueError('Must have at least one uppercase character')
+
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Must contain at least a number')
+
+        if not any(char in string.punctuation for char in v):
+            raise ValueError('Must contain at least one special character')
+
+        if any(char in string.whitespace for char in v):
+            raise ValueError('Cannot use space, tabs, or any other whitespace characters')
+        
+        return v
+        
