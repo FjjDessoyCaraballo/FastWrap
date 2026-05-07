@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI
 from config import settings
 from contextlib import asynccontextmanager
 from app.api.routes import router
